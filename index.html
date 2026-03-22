@@ -108,15 +108,15 @@ document.head.appendChild(link);
     flex: 1;
     overflow: hidden;
     position: relative;
+    min-height: 0;
   }
   .section {
     display: none;
     position: absolute;
     top: 0; left: 0; right: 0; bottom: 0;
-    overflow-y: auto;
+    overflow-y: scroll;
     -webkit-overflow-scrolling: touch;
-    padding: 20px 16px;
-    padding-bottom: calc(20px + var(--safe-bot));
+    padding: 20px 16px 40px;
   }
   .section.active { display: block; }
 
