@@ -52,11 +52,10 @@ document.head.appendChild(link);
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     background: var(--bg);
     color: var(--text);
-    height: 100vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+    min-height: 100vh;
     padding-top: var(--safe-top);
+    padding-bottom: calc(70px + var(--safe-bot));
+    overflow-x: hidden;
   }
 
   /* ── Header ── */
@@ -69,6 +68,7 @@ document.head.appendChild(link);
     -webkit-backdrop-filter: blur(20px);
     z-index: 100;
     border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
   }
   .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
   .resort-title { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
@@ -84,6 +84,8 @@ document.head.appendChild(link);
 
   /* ── Bottom nav ── */
   .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
     height: calc(60px + var(--safe-bot));
     padding-bottom: var(--safe-bot);
     background: rgba(15, 25, 35, 0.96);
@@ -91,7 +93,6 @@ document.head.appendChild(link);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid var(--border);
     display: flex;
-    flex-shrink: 0;
     z-index: 200;
   }
   .nav-btn {
@@ -104,20 +105,7 @@ document.head.appendChild(link);
   .nav-label { font-size: 9px; font-weight: 500; letter-spacing: 0.01em; }
 
   /* ── Sections ── */
-  .section-wrap {
-    flex: 1;
-    overflow: hidden;
-    position: relative;
-    min-height: 0;
-  }
-  .section {
-    display: none;
-    position: absolute;
-    top: 0; left: 0; right: 0; bottom: 0;
-    overflow-y: scroll;
-    -webkit-overflow-scrolling: touch;
-    padding: 20px 16px 40px;
-  }
+  .section { display: none; padding: 20px 16px; }
   .section.active { display: block; }
 
   /* ── Cards ── */
@@ -294,11 +282,6 @@ document.head.appendChild(link);
   </div>
 
 
-    <a href="https://www.snow-forecast.com/resorts/Nendaz/snow-report" target="_blank" class="webcam-link" style="margin-top:4px;">
-      ↗ Full snow report · Snow-Forecast.com
-    </a>
-  </div>
-
   <div class="card">
     <div class="card-title">6-day snow forecast · AM / PM / Night</div>
     <div style="display:flex;gap:6px;margin-bottom:14px;">
@@ -348,8 +331,6 @@ document.head.appendChild(link);
   </div>
 </div>
 
-
-<div class="section-wrap">
 <!-- TRAFFIC -->
 <div class="section" id="sec-traffic">
   <div class="card">
@@ -459,9 +440,6 @@ document.head.appendChild(link);
   </div>
 </div>
 
-  <button class="refresh-btn" onclick="loadWeather(); loadForecastTable(currentElev);">↻ Refresh weather</button>
-</div>
-
 <!-- WEBCAM -->
 <div class="section" id="sec-webcam">
 
@@ -500,7 +478,7 @@ document.head.appendChild(link);
 
 </div>
 
-<!-- TRAILS --><!-- TRAILS -->
+<!-- TRAILS -->
 <div class="section" id="sec-trails">
 
   <div class="card">
@@ -530,54 +508,6 @@ document.head.appendChild(link);
       <div class="avl-arrow">›</div>
     </a>
   </div>
-
-  <div class="card">
-    <div class="card-title">Lift opening times &amp; passes</div>
-    <a class="avl-link" href="https://www.nendaz.ch/en/Z13927/lifts-winter-opening-times" target="_blank" style="display:flex;margin-bottom:10px;">
-      <div>
-        <div class="avl-link-title">Lift opening times</div>
-        <div class="avl-link-sub">First &amp; last lift · All lifts schedule · Nendaz.ch</div>
-      </div>
-      <div class="avl-arrow">›</div>
-    </a>
-    <a class="avl-link" href="https://shop.nendazveysonnaz.ch" target="_blank" style="display:flex;">
-      <div>
-        <div class="avl-link-title">Buy ski pass online</div>
-        <div class="avl-link-sub">Nendaz / Veysonnaz official shop</div>
-      </div>
-      <div class="avl-arrow">›</div>
-    </a>
-  </div>
-
-  <div class="card" style="font-size:13px;color:var(--muted);line-height:1.6;">
-    <div class="card-title">Quick facts · 4 Vallées</div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
-      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Ski runs</div>
-        <div style="font-size:20px;font-weight:700;color:var(--text);">94</div>
-        <div style="font-size:11px;color:var(--muted);">412 km total</div>
-      </div>
-      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Lifts</div>
-        <div style="font-size:20px;font-weight:700;color:var(--text);">92</div>
-        <div style="font-size:11px;color:var(--muted);">4 Vallées total</div>
-      </div>
-      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Altitude range</div>
-        <div style="font-size:16px;font-weight:700;color:var(--text);">1350–3330m</div>
-        <div style="font-size:11px;color:var(--muted);">Nendaz 1365–3330m</div>
-      </div>
-      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Season</div>
-        <div style="font-size:16px;font-weight:700;color:var(--text);">Dec–Apr</div>
-        <div style="font-size:11px;color:var(--muted);">Dec 2025 – Apr 2026</div>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-</div>
 
 <!-- ═══ BOTTOM NAV ═══ -->
 <nav class="bottom-nav">
@@ -1042,5 +972,8 @@ window.addEventListener('DOMContentLoaded', () => {
   updateDangerDisplay();
 });
 </script>
+</body>
+</html>
+
 </body>
 </html>
