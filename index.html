@@ -698,9 +698,15 @@ async function loadForecastTable(elev) {
   wrap.innerHTML = '<div class="loading-text"><span class="spinner"></span>Fetching forecast…</div>';
   const {lat, lon} = ELEV_COORDS[elev];
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,snowfall,weathercode&timezone=Europe%2FZurich&forecast_days=7&models=meteoswiss_icon_ch2`;
-    const r = await fetch(url);
-    const d = await r.json();
+    // MeteoSwiss ICON for temp/wind/weathercode (high res, reliable)
+    // ECMWF IFS for snowfall only (avoids MeteoSwiss snowfall invalid-values bug)
+    const [r1, r2] = await Promise.all([
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,weathercode&timezone=Europe%2FZurich&forecast_days=7&models=meteoswiss_icon_ch2`),
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=snowfall&timezone=Europe%2FZurich&forecast_days=7&models=ecmwf_ifs025`)
+    ]);
+    const d = await r1.json();
+    const dSnow = await r2.json();
+    d.hourly.snowfall = dSnow.hourly.snowfall;
 
     const wmoIcon = code => {
       if (code === 0) return '☀️';
