@@ -54,6 +54,8 @@ document.head.appendChild(link);
     color: var(--text);
     height: 100vh;
     overflow: hidden;
+    display: flex;
+    flex-direction: column;
     padding-top: var(--safe-top);
   }
 
@@ -82,8 +84,6 @@ document.head.appendChild(link);
 
   /* ── Bottom nav ── */
   .bottom-nav {
-    position: fixed;
-    bottom: 0; left: 0; right: 0;
     height: calc(60px + var(--safe-bot));
     padding-bottom: var(--safe-bot);
     background: rgba(15, 25, 35, 0.96);
@@ -91,6 +91,7 @@ document.head.appendChild(link);
     -webkit-backdrop-filter: blur(20px);
     border-top: 1px solid var(--border);
     display: flex;
+    flex-shrink: 0;
     z-index: 200;
   }
   .nav-btn {
@@ -103,18 +104,19 @@ document.head.appendChild(link);
   .nav-label { font-size: 9px; font-weight: 500; letter-spacing: 0.01em; }
 
   /* ── Sections ── */
+  .section-wrap {
+    flex: 1;
+    overflow: hidden;
+    position: relative;
+  }
   .section {
     display: none;
-    padding: 20px 16px;
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    padding-top: calc(var(--header-h, 80px) + 10px);
-    padding-bottom: calc(70px + var(--safe-bot) + 10px);
+    padding: 20px 16px;
+    padding-bottom: calc(20px + var(--safe-bot));
   }
   .section.active { display: block; }
 
@@ -346,6 +348,8 @@ document.head.appendChild(link);
   </div>
 </div>
 
+
+<div class="section-wrap">
 <!-- TRAFFIC -->
 <div class="section" id="sec-traffic">
   <div class="card">
@@ -515,35 +519,13 @@ document.head.appendChild(link);
       </div>
       <div class="avl-arrow">›</div>
     </a>
-    <a class="avl-link" href="https://www.bergfex.com/nendaz-4-vallees/lifte/" target="_blank" style="display:flex;">
-      <div>
-        <div class="avl-link-title">Bergfex lift status</div>
-        <div class="avl-link-sub">Nendaz / 4 Vallées lift-by-lift overview</div>
-      </div>
-      <div class="avl-arrow">›</div>
-    </a>
   </div>
-
-  <div class="card">
-    <div class="card-title">Snow report &amp; conditions</div>
-    <a class="avl-link" href="https://snow.myswitzerland.com/snow_reports/nendaz-4-vallees-139/" target="_blank" style="display:flex;margin-bottom:10px;">
-      <div>
-        <div class="avl-link-title">MySwitzerland snow report</div>
-        <div class="avl-link-sub">Official measured depths · Lifts open · Updated daily</div>
-      </div>
       <div class="avl-arrow">›</div>
     </a>
     <a class="avl-link" href="https://www.snow-forecast.com/resorts/Nendaz/6day/mid" target="_blank" style="display:flex;margin-bottom:10px;">
       <div>
         <div class="avl-link-title">Snow-Forecast.com</div>
         <div class="avl-link-sub">6-day ski forecast · Top / mid / bottom elevations</div>
-      </div>
-      <div class="avl-arrow">›</div>
-    </a>
-    <a class="avl-link" href="https://www.bergfex.com/nendaz-4-vallees/schneebericht/" target="_blank" style="display:flex;">
-      <div>
-        <div class="avl-link-title">Bergfex snow report</div>
-        <div class="avl-link-sub">Snow depths &amp; piste conditions</div>
       </div>
       <div class="avl-arrow">›</div>
     </a>
@@ -592,6 +574,8 @@ document.head.appendChild(link);
       </div>
     </div>
   </div>
+
+</div>
 
 </div>
 
@@ -1044,13 +1028,6 @@ if ('serviceWorker' in navigator) {
 // INIT
 // ═══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
-  // Set header height CSS variable so sections start below it
-  const setHeaderH = () => {
-    const h = document.querySelector('.app-header').offsetHeight;
-    document.documentElement.style.setProperty('--header-h', h + 'px');
-  };
-  setHeaderH();
-  window.addEventListener('resize', setHeaderH);
 
   loadWeather();
   loadForecastTable('mid');
