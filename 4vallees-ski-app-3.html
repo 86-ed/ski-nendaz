@@ -1,0 +1,916 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="4 Vallées">
+<meta name="theme-color" content="#0f1923">
+<title>4 Vallées</title>
+
+<!-- PWA Manifest inline via JS -->
+<script>
+const manifest = {
+  name: "4 Vallées Ski",
+  short_name: "4 Vallées",
+  start_url: ".",
+  display: "standalone",
+  background_color: "#0f1923",
+  theme_color: "#0f1923",
+  icons: [{ src: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'><rect width='192' height='192' rx='40' fill='%230f1923'/><text y='130' x='96' text-anchor='middle' font-size='110' fill='white'>⛷</text></svg>", sizes: "192x192", type: "image/svg+xml" }]
+};
+const blob = new Blob([JSON.stringify(manifest)], {type: 'application/json'});
+const url = URL.createObjectURL(blob);
+const link = document.createElement('link');
+link.rel = 'manifest'; link.href = url;
+document.head.appendChild(link);
+</script>
+
+<style>
+  :root {
+    --bg: #0f1923;
+    --surface: #1a2533;
+    --surface2: #222f3e;
+    --border: rgba(255,255,255,0.08);
+    --text: #f0f4f8;
+    --muted: #7a9bb5;
+    --accent: #4fc3f7;
+    --snow: #a8d8f0;
+    --danger1: #4caf50;
+    --danger2: #ffeb3b;
+    --danger3: #ff9800;
+    --danger4: #f44336;
+    --danger5: #7b1fa2;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bot: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding-top: var(--safe-top);
+    padding-bottom: calc(70px + var(--safe-bot));
+    overflow-x: hidden;
+  }
+
+  /* ── Header ── */
+  .app-header {
+    padding: 18px 20px 12px;
+    position: sticky;
+    top: 0;
+    background: rgba(15, 25, 35, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 100;
+    border-bottom: 1px solid var(--border);
+  }
+  .header-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .resort-title { font-size: 26px; font-weight: 700; letter-spacing: -0.5px; color: var(--text); }
+  .resort-sub { font-size: 13px; color: var(--muted); margin-top: 1px; }
+  .update-badge {
+    font-size: 11px; color: var(--muted);
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 4px 10px;
+    white-space: nowrap;
+  }
+
+  /* ── Bottom nav ── */
+  .bottom-nav {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: calc(60px + var(--safe-bot));
+    padding-bottom: var(--safe-bot);
+    background: rgba(15, 25, 35, 0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border);
+    display: flex;
+    z-index: 200;
+  }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 3px; background: none; border: none; cursor: pointer; padding: 8px 4px;
+    color: var(--muted); transition: color 0.15s;
+  }
+  .nav-btn.active { color: var(--accent); }
+  .nav-icon { font-size: 20px; line-height: 1; }
+  .nav-label { font-size: 9px; font-weight: 500; letter-spacing: 0.01em; }
+
+  /* ── Sections ── */
+  .section { display: none; padding: 20px 16px; }
+  .section.active { display: block; }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 12px;
+  }
+
+  /* ── Snow metrics ── */
+  .snow-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .snow-metric {
+    background: var(--surface2); border-radius: 12px; padding: 14px 12px;
+  }
+  .snow-metric-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .snow-metric-value { font-size: 28px; font-weight: 700; color: var(--text); line-height: 1; }
+  .snow-metric-unit { font-size: 14px; font-weight: 400; color: var(--muted); }
+  .snow-metric-sub { font-size: 11px; color: var(--accent); margin-top: 3px; }
+
+  /* ── Forecast strip ── */
+  .forecast-strip { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; -webkit-overflow-scrolling: touch; }
+  .forecast-strip::-webkit-scrollbar { display: none; }
+  .forecast-day {
+    flex-shrink: 0; width: 68px;
+    background: var(--surface2); border-radius: 12px;
+    padding: 10px 8px; text-align: center;
+  }
+  .forecast-day.today { border: 1px solid var(--accent); }
+  .f-day { font-size: 11px; color: var(--muted); margin-bottom: 6px; font-weight: 500; }
+  .f-icon { font-size: 22px; margin-bottom: 4px; }
+  .f-temp { font-size: 14px; font-weight: 600; color: var(--text); }
+  .f-snow { font-size: 11px; color: var(--snow); margin-top: 3px; font-weight: 600; }
+  .f-snow-0 { color: var(--muted); }
+
+  /* ── Snow accumulation bar ── */
+  .snow-bar-wrap { margin-top: 14px; }
+  .snow-bar-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .snow-bar-track { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; }
+  .snow-bar-fill { height: 100%; background: linear-gradient(90deg, var(--accent), var(--snow)); border-radius: 3px; transition: width 0.6s ease; }
+
+  /* ── Loading state ── */
+  .loading-text { color: var(--muted); font-size: 14px; text-align: center; padding: 20px; }
+  .error-text { color: #ef5350; font-size: 13px; text-align: center; padding: 12px; }
+
+  /* ── Webcam ── */
+  .webcam-container {
+    background: #000; border-radius: 12px; overflow: hidden;
+    position: relative; aspect-ratio: 16/9; margin-bottom: 10px;
+  }
+  .webcam-container iframe {
+    width: 100%; height: 100%; border: none; display: block;
+  }
+  .webcam-note { font-size: 12px; color: var(--muted); text-align: center; margin-top: 6px; }
+  .webcam-link {
+    display: block; text-align: center; margin-top: 10px;
+    color: var(--accent); font-size: 13px; font-weight: 500;
+    text-decoration: none; padding: 10px;
+    background: var(--surface2); border-radius: 10px;
+  }
+
+  /* ── Traffic table ── */
+  .traffic-tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .traffic-tab {
+    flex: 1; padding: 8px 4px; border-radius: 10px; border: 1px solid var(--border);
+    background: transparent; color: var(--muted); font-size: 12px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s; text-align: center;
+  }
+  .traffic-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
+  .traffic-table { width: 100%; border-collapse: collapse; }
+  .traffic-table th {
+    font-size: 11px; color: var(--muted); font-weight: 500; text-align: left;
+    padding: 6px 8px; border-bottom: 1px solid var(--border); letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .traffic-table td { font-size: 14px; padding: 11px 8px; border-bottom: 1px solid var(--border); }
+  .traffic-table tr:last-child td { border-bottom: none; }
+  .duration-pill {
+    display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .dur-green { background: rgba(76,175,80,0.15); color: #81c784; }
+  .dur-yellow { background: rgba(255,235,59,0.12); color: #fff176; }
+  .dur-orange { background: rgba(255,152,0,0.15); color: #ffb74d; }
+  .dur-red { background: rgba(244,67,54,0.15); color: #ef9a9a; }
+  .traffic-note { font-size: 11px; color: var(--muted); margin-top: 10px; text-align: center; font-style: italic; }
+  .traffic-refresh-btn {
+    width: 100%; margin-top: 12px; padding: 12px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; color: var(--accent); font-size: 14px; font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* ── Avalanche ── */
+  .danger-display {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px; background: var(--surface2); border-radius: 12px; margin-bottom: 14px;
+  }
+  .danger-badge {
+    width: 64px; height: 64px; border-radius: 12px; flex-shrink: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    font-size: 28px; font-weight: 800; line-height: 1;
+  }
+  .danger-badge-sub { font-size: 9px; font-weight: 600; letter-spacing: 0.05em; margin-top: 1px; }
+  .danger-info-label { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+  .danger-info-level { font-size: 18px; font-weight: 700; color: var(--text); }
+  .danger-info-desc { font-size: 12px; color: var(--muted); margin-top: 4px; line-height: 1.4; }
+  .aspect-note { font-size: 13px; color: var(--text); line-height: 1.5; margin-bottom: 14px; padding: 12px; background: var(--surface2); border-radius: 10px; border-left: 3px solid var(--accent); }
+  .avl-link {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px; background: var(--surface2); border-radius: 12px;
+    text-decoration: none; color: var(--text);
+  }
+  .avl-link-title { font-size: 14px; font-weight: 600; }
+  .avl-link-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .avl-arrow { font-size: 18px; color: var(--muted); }
+  .danger-select-wrap { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .danger-select {
+    flex: 1; padding: 10px 12px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; color: var(--text); font-size: 14px; appearance: none;
+  }
+  .danger-select-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+
+  /* ── Spinner ── */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border);
+    border-top-color: var(--accent); border-radius: 50%;
+    animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px;
+  }
+
+  /* ── Refresh button ── */
+  .refresh-btn {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    width: 100%; padding: 12px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 12px;
+    color: var(--accent); font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 6px;
+  }
+  .section-gap { height: 8px; }
+
+  /* ── Skeleton loader ── */
+  @keyframes shimmer { 0%{opacity:0.4} 50%{opacity:0.8} 100%{opacity:0.4} }
+  .skeleton { background: var(--surface2); border-radius: 8px; animation: shimmer 1.5s infinite; }
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="header-top">
+    <div>
+      <div class="resort-title">4 Vallées</div>
+      <div class="resort-sub">Verbier · Nendaz · Thyon · Veysonnaz</div>
+    </div>
+    <div class="update-badge" id="last-update">Loading…</div>
+  </div>
+</div>
+
+<!-- ═══ SECTIONS ═══ -->
+
+<!-- SNOW & WEATHER -->
+<div class="section active" id="sec-snow">
+
+  <div class="card">
+    <div class="card-title">Current conditions · Nendaz 2300m</div>
+    <div class="snow-grid" id="snow-metrics">
+      <div class="snow-metric"><div class="snow-metric-label">Loading…</div><div class="skeleton" style="height:36px;margin-top:4px;"></div></div>
+      <div class="snow-metric"><div class="snow-metric-label">Loading…</div><div class="skeleton" style="height:36px;margin-top:4px;"></div></div>
+      <div class="snow-metric"><div class="snow-metric-label">Loading…</div><div class="skeleton" style="height:36px;margin-top:4px;"></div></div>
+      <div class="snow-metric"><div class="snow-metric-label">Loading…</div><div class="skeleton" style="height:36px;margin-top:4px;"></div></div>
+    </div>
+    <div style="margin-top:10px;font-size:11px;color:var(--muted);">Temp &amp; wind: Open-Meteo / MeteoSwiss · Snow depths: Snow-Forecast.com</div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Measured snow depths</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:2px;">Top of resort</div>
+        <div style="font-size:22px;font-weight:700;" id="depth-top">–</div>
+      </div>
+      <div style="text-align:center;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:2px;">Last snowfall</div>
+        <div style="font-size:14px;font-weight:600;color:var(--snow);" id="depth-lastsnow">–</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:12px;color:var(--muted);margin-bottom:2px;">Bottom</div>
+        <div style="font-size:22px;font-weight:700;" id="depth-bot">–</div>
+      </div>
+    </div>
+    <a href="https://www.snow-forecast.com/resorts/Nendaz/snow-report" target="_blank" class="webcam-link" style="margin-top:4px;">
+      ↗ Full snow report · Snow-Forecast.com
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-title">6-day snow forecast · Snow-Forecast.com</div>
+    <div style="display:flex;gap:6px;margin-bottom:12px;">
+      <button class="traffic-tab active" id="elev-mid" onclick="setElevation('mid')">Mid 2348m</button>
+      <button class="traffic-tab" id="elev-top" onclick="setElevation('top')">Top 3331m</button>
+      <button class="traffic-tab" id="elev-bot" onclick="setElevation('bot')">Bottom 1365m</button>
+    </div>
+    <div style="border-radius:10px;overflow:hidden;background:#fff;">
+      <iframe id="sf-iframe"
+        src="https://www.snow-forecast.com/resorts/Nendaz/6day/mid"
+        width="100%"
+        height="380"
+        frameborder="0"
+        scrolling="no"
+        title="Nendaz snow forecast"
+        style="display:block;width:100%;border:none;"
+      ></iframe>
+    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--muted);text-align:center;">
+      Forecast by <a href="https://www.snow-forecast.com/resorts/Nendaz/6day/mid" target="_blank" style="color:var(--accent);">Snow-Forecast.com</a>
+    </div>
+  </div>
+
+  <button class="refresh-btn" onclick="loadWeather()">↻ Refresh weather</button>
+</div>
+
+<!-- WEBCAM -->
+<div class="section" id="sec-webcam">
+  <div class="card">
+    <div class="card-title">Live webcam · Siviez base station</div>
+    <div class="webcam-container">
+      <iframe 
+        src="https://nendaz.roundshot.com/siviez/#"
+        title="Siviez Roundshot Webcam"
+        allowfullscreen
+        loading="lazy"
+      ></iframe>
+    </div>
+    <div class="webcam-note">360° panorama by Roundshot · Updated every 2 min</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Snow depth camera · La Chaux 2265m</div>
+    <div class="webcam-container" style="aspect-ratio:16/9;">
+      <iframe
+        src="https://www.teleport.io/api/v2/player?feedid=fe5nsqhtejqi&playmode=liveimage&playmodespossible=liveimage,livetimelapse&framesizingmode=fitwidth&showsplashbadge=false&backgroundcolor=0f1923"
+        title="La Chaux snow depth camera"
+        frameborder="0"
+        allow="fullscreen"
+        allowfullscreen
+        loading="lazy"
+        style="width:100%;height:100%;border:none;display:block;"
+      ></iframe>
+    </div>
+    <div class="webcam-note">Snow accumulation gauge · La Chaux 2265m · via Teleport.io</div>
+    <a class="webcam-link" href="https://www.teleport.io/view?feedId=fe5nsqhtejqi&view=full" target="_blank" style="margin-top:8px;">
+      ↗ Open full view + time-lapse
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-title">More webcams</div>
+    <a class="webcam-link" href="https://nendaz.roundshot.com/combatseline/" target="_blank">
+      ↗ Combatseline (mid-mountain)
+    </a>
+    <a class="webcam-link" href="https://verbier.roundshot.com/montfort/" target="_blank" style="margin-top:8px;">
+      ↗ Mont Fort (summit 3300m)
+    </a>
+    <a class="webcam-link" href="https://verbier4vallees.ch/en/useful-information/webcams" target="_blank" style="margin-top:8px;">
+      ↗ All resort webcams
+    </a>
+  </div>
+</div>
+
+<!-- TRAFFIC -->
+<div class="section" id="sec-traffic">
+  <div class="card">
+    <div class="card-title">Commugny ↔ Nendaz · Predicted travel times</div>
+    <div class="traffic-tabs">
+      <button class="traffic-tab active" id="tab-fri" onclick="showTrafficTab('fri')">
+        Friday<br><span style="font-weight:400;font-size:10px;">Commugny → Nendaz</span>
+      </button>
+      <button class="traffic-tab" id="tab-sun" onclick="showTrafficTab('sun')">
+        Sunday<br><span style="font-weight:400;font-size:10px;">Nendaz → Commugny</span>
+      </button>
+    </div>
+
+    <!-- Friday table -->
+    <div id="traffic-fri">
+      <table class="traffic-table">
+        <thead>
+          <tr>
+            <th>Depart</th>
+            <th>Arrive</th>
+            <th>Duration</th>
+            <th>Traffic</th>
+          </tr>
+        </thead>
+        <tbody id="fri-rows">
+          <tr><td colspan="4" class="loading-text"><span class="spinner"></span>Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Sunday table -->
+    <div id="traffic-sun" style="display:none;">
+      <table class="traffic-table">
+        <thead>
+          <tr>
+            <th>Depart</th>
+            <th>Arrive</th>
+            <th>Duration</th>
+            <th>Traffic</th>
+          </tr>
+        </thead>
+        <tbody id="sun-rows">
+          <tr><td colspan="4" class="loading-text"><span class="spinner"></span>Loading…</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="traffic-note" id="traffic-note">Times estimated via Google Maps for next occurrence of this day/hour</div>
+    <button class="refresh-btn" onclick="loadTraffic()">↻ Refresh travel times</button>
+  </div>
+
+  <div class="card" style="font-size:13px; color:var(--muted); line-height:1.6;">
+    <div class="card-title">Route info</div>
+    Commugny → A1 → Lausanne → A9 → Sion → Nendaz<br>
+    <span style="color:var(--accent);">~130 km</span> · Base time approx. 1h 45min<br><br>
+    ⚠️ <strong style="color:var(--text);">Check road conditions:</strong> Chains or snow tyres may be required above Aproz. <a href="https://www.tcs.ch/fr/outils/etat-du-trafic.php" style="color:var(--accent);" target="_blank">TCS traffic →</a>
+  </div>
+</div>
+
+<!-- AVALANCHE -->
+<div class="section" id="sec-avalanche">
+
+  <div class="card">
+    <div class="card-title">Avalanche danger · Valais / 4 Vallées</div>
+
+    <div class="danger-select-label">Set today's danger level (from SLF bulletin):</div>
+    <div class="danger-select-wrap">
+      <select class="danger-select" id="danger-select" onchange="updateDangerDisplay()">
+        <option value="1">1 – Low</option>
+        <option value="2" selected>2 – Limited</option>
+        <option value="3">3 – Considerable</option>
+        <option value="4">4 – High</option>
+        <option value="5">5 – Very High</option>
+      </select>
+    </div>
+
+    <div class="danger-display" id="danger-display">
+      <!-- filled by JS -->
+    </div>
+
+    <div class="aspect-note" id="aspect-note">
+      Open the SLF bulletin below for the specific aspects and elevations affected.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Official sources</div>
+    <a class="avl-link" href="https://whiterisk.ch/en/conditions" target="_blank" style="margin-bottom:10px;display:flex;">
+      <div>
+        <div class="avl-link-title">WhiteRisk · SLF</div>
+        <div class="avl-link-sub">Official Swiss avalanche bulletin + map</div>
+      </div>
+      <div class="avl-arrow">›</div>
+    </a>
+    <a class="avl-link" href="https://www.slf.ch/en/avalanche-bulletin-and-snow-situation/" target="_blank" style="display:flex;">
+      <div>
+        <div class="avl-link-title">SLF Avalanche bulletin</div>
+        <div class="avl-link-sub">Updated twice daily · Valais region</div>
+      </div>
+      <div class="avl-arrow">›</div>
+    </a>
+  </div>
+
+  <div class="card" style="font-size:13px;color:var(--muted);line-height:1.6;">
+    <div class="card-title">Scale reference</div>
+    <div style="display:flex;flex-direction:column;gap:6px;" id="scale-ref"></div>
+  </div>
+</div>
+
+<!-- TRAILS -->
+<div class="section" id="sec-trails">
+
+  <div class="card">
+    <div class="card-title">Live trail &amp; lift map</div>
+    <a class="avl-link" href="https://www.nendaz.ch/en/Z13328/live-map-of-the-ski-area" target="_blank" style="display:flex;margin-bottom:10px;">
+      <div>
+        <div class="avl-link-title">4 Vallées live map</div>
+        <div class="avl-link-sub">Open/closed runs &amp; lifts · Updated in real time</div>
+      </div>
+      <div class="avl-arrow">›</div>
+    </a>
+    <a class="avl-link" href="https://www.verbier4vallees.ch/en/ski-area/4-vallees-ski-map" target="_blank" style="display:flex;">
+      <div>
+        <div class="avl-link-title">4 Vallées piste map</div>
+        <div class="avl-link-sub">Full ski area overview · Verbier4Vallees.ch</div>
+      </div>
+      <div class="avl-arrow">›</div>
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Nendaz / Siviez area</div>
+    <a class="avl-link" href="https://www.nendaz.ch/en/Z13484/ski-area" target="_blank" style="display:flex;margin-bottom:10px;">
+      <div>
+        <div class="avl-link-title">Nendaz ski area status</div>
+        <div class="avl-link-sub">Open lifts, slopes &amp; current conditions</div>
+      </div>
+      <div class="avl-arrow">›</div>
+    </a>
+    <a class="avl-link" href="https://www.bergfex.com/nendaz-4-vallees/pisten/" target="_blank" style="display:flex;margin-bottom:10px;">
+      <div>
+        <div class="avl-link-title">Bergfex piste status</div>
+        <div class="avl-link-sub">Run-by-run open/closed overview</div>
+      </div>
+      <div class="avl-arrow">›</div>
+    </a>
+    <a class="avl-link" href="https://www.nendaz.ch/en/Z13927/winter-lifts-schedule" target="_blank" style="display:flex;">
+      <div>
+        <div class="avl-link-title">Lift opening times</div>
+        <div class="avl-link-sub">First &amp; last lift · All lifts schedule</div>
+      </div>
+      <div class="avl-arrow">›</div>
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Verbier &amp; full 4 Vallées</div>
+    <a class="avl-link" href="https://www.verbier.ch/en/ski-snowboard/ski-area/ski-area-status/" target="_blank" style="display:flex;margin-bottom:10px;">
+      <div>
+        <div class="avl-link-title">Verbier ski area status</div>
+        <div class="avl-link-sub">Live lift &amp; run status for Verbier sector</div>
+      </div>
+      <div class="avl-arrow">›</div>
+    </a>
+    <a class="avl-link" href="https://www.verbier4vallees.ch/en/ski-area/lifts-and-slopes" target="_blank" style="display:flex;">
+      <div>
+        <div class="avl-link-title">All lifts &amp; slopes status</div>
+        <div class="avl-link-sub">Complete 4 Vallées open/closed list</div>
+      </div>
+      <div class="avl-arrow">›</div>
+    </a>
+  </div>
+
+  <div class="card" style="font-size:13px;color:var(--muted);line-height:1.6;">
+    <div class="card-title">Quick facts · 4 Vallées</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:4px;">
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Ski runs</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text);">94</div>
+        <div style="font-size:11px;color:var(--muted);">412 km total</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Lifts</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text);">81</div>
+        <div style="font-size:11px;color:var(--muted);">4 Vallées total</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Altitude range</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);">821–3330m</div>
+        <div style="font-size:11px;color:var(--muted);">Nendaz 1365–3330m</div>
+      </div>
+      <div style="background:var(--surface2);border-radius:10px;padding:12px;">
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Snow guarantee</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);">Dec–Apr</div>
+        <div style="font-size:11px;color:var(--muted);">Above 2000m</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ BOTTOM NAV ═══ -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" id="nav-snow" onclick="showSection('snow')">
+    <span class="nav-icon">❄️</span>
+    <span class="nav-label">Snow</span>
+  </button>
+  <button class="nav-btn" id="nav-webcam" onclick="showSection('webcam')">
+    <span class="nav-icon">📷</span>
+    <span class="nav-label">Webcam</span>
+  </button>
+  <button class="nav-btn" id="nav-trails" onclick="showSection('trails')">
+    <span class="nav-icon">🎿</span>
+    <span class="nav-label">Trails</span>
+  </button>
+  <button class="nav-btn" id="nav-traffic" onclick="showSection('traffic')">
+    <span class="nav-icon">🚗</span>
+    <span class="nav-label">Traffic</span>
+  </button>
+  <button class="nav-btn" id="nav-avalanche" onclick="showSection('avalanche')">
+    <span class="nav-icon">⚠️</span>
+    <span class="nav-label">Avalanche</span>
+  </button>
+</nav>
+
+<script>
+// ═══════════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════════
+function showSection(name) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+}
+
+// ═══════════════════════════════════════════
+// WEATHER / SNOW — Open-Meteo (MeteoSwiss ICON)
+// Nendaz / Siviez area: 46.175, 7.295, elevation ~2300m
+// ═══════════════════════════════════════════
+const LAT = 46.175, LON = 7.295;
+
+async function loadWeather() {
+  const now = new Date();
+  // ── Open-Meteo: temperature & wind ONLY (reliable fields) ──
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&hourly=temperature_2m,windspeed_10m,weathercode&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=Europe%2FZurich&forecast_days=1&models=meteoswiss_icon_ch2`;
+    const r = await fetch(url);
+    const d = await r.json();
+    const hourIdx = Math.min(now.getHours(), (d.hourly.temperature_2m || []).length - 1);
+    const temp = Math.round(d.hourly.temperature_2m[hourIdx]);
+    const wind = Math.round(d.hourly.windspeed_10m[hourIdx]);
+    const tmax = Math.round(d.daily.temperature_2m_max[0]);
+    const tmin = Math.round(d.daily.temperature_2m_min[0]);
+
+    document.getElementById('snow-metrics').innerHTML = `
+      <div class="snow-metric">
+        <div class="snow-metric-label">Temperature now</div>
+        <div class="snow-metric-value">${temp}<span class="snow-metric-unit">°C</span></div>
+        <div class="snow-metric-sub">At ~2300m</div>
+      </div>
+      <div class="snow-metric">
+        <div class="snow-metric-label">Wind speed</div>
+        <div class="snow-metric-value">${wind}<span class="snow-metric-unit">km/h</span></div>
+        <div class="snow-metric-sub">Summit may differ</div>
+      </div>
+      <div class="snow-metric">
+        <div class="snow-metric-label">Today max</div>
+        <div class="snow-metric-value">${tmax}<span class="snow-metric-unit">°C</span></div>
+        <div class="snow-metric-sub">MeteoSwiss model</div>
+      </div>
+      <div class="snow-metric">
+        <div class="snow-metric-label">Today min</div>
+        <div class="snow-metric-value">${tmin}<span class="snow-metric-unit">°C</span></div>
+        <div class="snow-metric-sub">MeteoSwiss model</div>
+      </div>
+    `;
+    document.getElementById('last-update').textContent = 'Updated ' + now.toLocaleTimeString('en-CH', {hour:'2-digit',minute:'2-digit'});
+  } catch(e) {
+    document.getElementById('snow-metrics').innerHTML = `<div class="error-text" style="grid-column:1/-1;">⚠ Could not load weather.<br><small>${e.message}</small></div>`;
+  }
+
+  // ── Snow depths: fetch Snow-Forecast snow report page and parse ──
+  try {
+    const sfUrl = 'https://www.snow-forecast.com/resorts/Nendaz/snow-report';
+    const resp = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(sfUrl)}`);
+    const json = await resp.json();
+    const html = json.contents || '';
+
+    // Parse top/bottom snow depth and last snowfall from the page text
+    const topMatch = html.match(/Top snow depth[^<]*<[^>]+>([^<]+)/i) ||
+                     html.match(/top.*?(\d+)\s*cm/i);
+    const botMatch = html.match(/Bottom snow depth[^<]*<[^>]+>([^<]+)/i) ||
+                     html.match(/bottom.*?(\d+)\s*cm/i);
+    const lastSnowMatch = html.match(/Last snowfall[^<]*<[^>]+>([^<]+)/i) ||
+                          html.match(/last snowfall[:\s]+([A-Za-z0-9 ]+)/i);
+
+    const topDepth = topMatch ? topMatch[1].trim().replace(/[^\d\s\-–cm]/g,'').trim() : '–';
+    const botDepth = botMatch ? botMatch[1].trim().replace(/[^\d\s\-–cm]/g,'').trim() : '–';
+    const lastSnow = lastSnowMatch ? lastSnowMatch[1].trim() : '–';
+
+    document.getElementById('depth-top').textContent = topDepth.match(/\d/) ? topDepth : '–';
+    document.getElementById('depth-bot').textContent = botDepth.match(/\d/) ? botDepth : '–';
+    document.getElementById('depth-lastsnow').textContent = lastSnow;
+  } catch(e) {
+    // Silently fail — the link to Snow-Forecast is still there
+    document.getElementById('depth-top').textContent = 'see link';
+    document.getElementById('depth-bot').textContent = 'see link';
+    document.getElementById('depth-lastsnow').textContent = 'see link ↗';
+  }
+}
+
+// Elevation switcher for Snow-Forecast widget
+function setElevation(elev) {
+  ['mid','top','bot'].forEach(e => document.getElementById('elev-'+e).classList.remove('active'));
+  document.getElementById('elev-'+elev).classList.add('active');
+  document.getElementById('sf-iframe').src = `https://www.snow-forecast.com/resorts/Nendaz/6day/${elev}`;
+}
+
+// ═══════════════════════════════════════════
+// TRAFFIC — Google Maps API
+// Commugny: 46.3169, 6.2132
+// Nendaz: 46.1757, 7.2942
+// ═══════════════════════════════════════════
+
+// ⚠️ INSERT YOUR GOOGLE MAPS API KEY HERE
+const GMAPS_KEY = 'YOUR_GOOGLE_MAPS_API_KEY';
+
+const COMMUGNY = '46.3169,6.2132';
+const NENDAZ   = '46.1757,7.2942';
+
+// Generate next occurrence of a given weekday+hour
+function nextWeekdayAt(dayOfWeek, hour) {
+  // dayOfWeek: 0=Sun, 5=Fri, 6=Sat
+  const now = new Date();
+  const result = new Date(now);
+  result.setHours(hour, 0, 0, 0);
+  const diff = (dayOfWeek - now.getDay() + 7) % 7;
+  result.setDate(now.getDate() + (diff === 0 && now.getHours() >= hour ? 7 : diff));
+  return Math.floor(result.getTime() / 1000);
+}
+
+function durationColor(mins) {
+  if (mins < 120) return 'dur-green';
+  if (mins < 145) return 'dur-yellow';
+  if (mins < 170) return 'dur-orange';
+  return 'dur-red';
+}
+
+function fmtMins(secs) {
+  const m = Math.round(secs / 60);
+  const h = Math.floor(m / 60), rm = m % 60;
+  return h > 0 ? `${h}h ${rm}min` : `${m} min`;
+}
+
+async function fetchOneRoute(origin, dest, departureSec) {
+  if (!GMAPS_KEY || GMAPS_KEY === 'YOUR_GOOGLE_MAPS_API_KEY') {
+    // Fallback: estimated times based on typical patterns
+    return null;
+  }
+  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${dest}&departure_time=${departureSec}&traffic_model=best_guess&key=${GMAPS_KEY}`;
+  const r = await fetch(url);
+  const d = await r.json();
+  return d?.rows?.[0]?.elements?.[0];
+}
+
+// Fallback estimated times (without API key) based on typical Friday/Sunday patterns
+const FRI_ESTIMATES = [
+  { dep: '15:00', arr: '16:45', mins: 105, label: 'Light' },
+  { dep: '16:00', arr: '17:55', mins: 115, label: 'Moderate' },
+  { dep: '17:00', arr: '19:10', mins: 130, label: 'Heavy' },
+  { dep: '18:00', arr: '20:20', mins: 140, label: 'Heavy' },
+  { dep: '19:00', arr: '20:55', mins: 115, label: 'Moderate' },
+  { dep: '20:00', arr: '21:45', mins: 105, label: 'Light' },
+  { dep: '21:00', arr: '22:45', mins: 105, label: 'Light' },
+];
+const SUN_ESTIMATES = [
+  { dep: '13:00', arr: '14:55', mins: 115, label: 'Moderate' },
+  { dep: '14:00', arr: '15:45', mins: 105, label: 'Light' },
+  { dep: '15:00', arr: '16:50', mins: 110, label: 'Moderate' },
+  { dep: '16:00', arr: '18:00', mins: 120, label: 'Moderate' },
+  { dep: '17:00', arr: '19:10', mins: 130, label: 'Heavy' },
+  { dep: '18:00', arr: '20:20', mins: 140, label: 'Heavy' },
+  { dep: '19:00', arr: '20:55', mins: 115, label: 'Moderate' },
+];
+
+function renderTrafficTable(rows, tbodyId) {
+  const tbody = document.getElementById(tbodyId);
+  tbody.innerHTML = rows.map(row => {
+    const cls = durationColor(row.mins);
+    return `<tr>
+      <td><strong>${row.dep}</strong></td>
+      <td>${row.arr}</td>
+      <td><span class="duration-pill ${cls}">${Math.floor(row.mins/60)}h ${row.mins%60}min</span></td>
+      <td style="font-size:12px;color:var(--muted);">${row.label}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadTraffic() {
+  document.getElementById('fri-rows').innerHTML = '<tr><td colspan="4" class="loading-text"><span class="spinner"></span>Loading…</td></tr>';
+  document.getElementById('sun-rows').innerHTML = '<tr><td colspan="4" class="loading-text"><span class="spinner"></span>Loading…</td></tr>';
+
+  const useAPI = GMAPS_KEY && GMAPS_KEY !== 'YOUR_GOOGLE_MAPS_API_KEY';
+
+  if (!useAPI) {
+    // Use estimates
+    document.getElementById('traffic-note').textContent = '⚠ Estimated times — add a Google Maps API key for live data';
+    renderTrafficTable(FRI_ESTIMATES, 'fri-rows');
+    renderTrafficTable(SUN_ESTIMATES, 'sun-rows');
+    return;
+  }
+
+  // Live API
+  try {
+    const friHours = [15,16,17,18,19,20,21];
+    const sunHours = [13,14,15,16,17,18,19];
+
+    async function buildRows(hours, dayOfWeek, origin, dest) {
+      const rows = [];
+      for (const h of hours) {
+        const depSec = nextWeekdayAt(dayOfWeek, h);
+        const el = await fetchOneRoute(origin, dest, depSec);
+        if (el && el.status === 'OK') {
+          const mins = Math.round(el.duration_in_traffic.value / 60);
+          const depTime = `${String(h).padStart(2,'0')}:00`;
+          const arrDate = new Date(Date.now()); arrDate.setHours(h,0,0,0);
+          arrDate.setSeconds(arrDate.getSeconds() + el.duration_in_traffic.value);
+          const arrTime = arrDate.toLocaleTimeString('en-CH',{hour:'2-digit',minute:'2-digit'});
+          let label = mins < 120 ? 'Light' : mins < 145 ? 'Moderate' : 'Heavy';
+          rows.push({ dep: depTime, arr: arrTime, mins, label });
+        }
+      }
+      return rows;
+    }
+
+    const [friRows, sunRows] = await Promise.all([
+      buildRows(friHours, 5, COMMUGNY, NENDAZ),
+      buildRows(sunHours, 0, NENDAZ, COMMUGNY)
+    ]);
+
+    renderTrafficTable(friRows.length ? friRows : FRI_ESTIMATES, 'fri-rows');
+    renderTrafficTable(sunRows.length ? sunRows : SUN_ESTIMATES, 'sun-rows');
+    document.getElementById('traffic-note').textContent = 'Live data via Google Maps · ' + new Date().toLocaleTimeString('en-CH',{hour:'2-digit',minute:'2-digit'});
+  } catch(e) {
+    renderTrafficTable(FRI_ESTIMATES, 'fri-rows');
+    renderTrafficTable(SUN_ESTIMATES, 'sun-rows');
+    document.getElementById('traffic-note').textContent = 'API error — showing estimates. ' + e.message;
+  }
+}
+
+function showTrafficTab(tab) {
+  document.getElementById('traffic-fri').style.display = tab === 'fri' ? 'block' : 'none';
+  document.getElementById('traffic-sun').style.display = tab === 'sun' ? 'block' : 'none';
+  document.getElementById('tab-fri').classList.toggle('active', tab === 'fri');
+  document.getElementById('tab-sun').classList.toggle('active', tab === 'sun');
+}
+
+// ═══════════════════════════════════════════
+// AVALANCHE DANGER
+// ═══════════════════════════════════════════
+const DANGER_LEVELS = [
+  { level: 1, label: 'Low',          color: '#4caf50', bg: 'rgba(76,175,80,0.15)',   desc: 'Generally safe conditions. Natural and human-triggered avalanches unlikely.' },
+  { level: 2, label: 'Limited',      color: '#cddc39', bg: 'rgba(205,220,57,0.15)',  desc: 'Avalanches possible on very steep slopes. Careful route selection recommended.' },
+  { level: 3, label: 'Considerable', color: '#ff9800', bg: 'rgba(255,152,0,0.15)',   desc: 'Avalanches can be easily triggered. Inexperienced persons should avoid off-piste.' },
+  { level: 4, label: 'High',         color: '#f44336', bg: 'rgba(244,67,54,0.15)',   desc: 'Very likely to trigger. Stick to groomed runs only. Safety services may close terrain.' },
+  { level: 5, label: 'Very High',    color: '#9c27b0', bg: 'rgba(156,39,176,0.15)',  desc: 'Extreme danger. Off-piste activity not recommended. Large natural avalanches expected.' },
+];
+
+function updateDangerDisplay() {
+  const val = parseInt(document.getElementById('danger-select').value);
+  const d = DANGER_LEVELS[val - 1];
+  document.getElementById('danger-display').innerHTML = `
+    <div class="danger-badge" style="background:${d.bg};color:${d.color};">
+      <span>${val}</span>
+      <span class="danger-badge-sub" style="color:${d.color};">${d.label.toUpperCase()}</span>
+    </div>
+    <div>
+      <div class="danger-info-label">Current danger level</div>
+      <div class="danger-info-level" style="color:${d.color};">${val} – ${d.label}</div>
+      <div class="danger-info-desc">${d.desc}</div>
+    </div>
+  `;
+  // Save to localStorage
+  try { localStorage.setItem('avl-danger', val); } catch(e) {}
+}
+
+function buildScaleRef() {
+  const wrap = document.getElementById('scale-ref');
+  wrap.innerHTML = DANGER_LEVELS.map(d => `
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div style="width:28px;height:28px;border-radius:6px;background:${d.bg};color:${d.color};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;">${d.level}</div>
+      <div>
+        <span style="font-size:13px;color:var(--text);font-weight:600;">${d.label}</span>
+        <span style="font-size:12px;color:var(--muted);margin-left:6px;">${d.desc.split('.')[0]}.</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ═══════════════════════════════════════════
+// SERVICE WORKER (PWA offline support)
+// ═══════════════════════════════════════════
+if ('serviceWorker' in navigator) {
+  const swCode = `
+    const CACHE = 'ski-v1';
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
+    });
+    self.addEventListener('fetch', e => {
+      if (e.request.url.includes('api.open-meteo.com') || e.request.url.includes('googleapis.com')) {
+        e.respondWith(fetch(e.request).catch(() => new Response('{"error":true}',{headers:{'Content-Type':'application/json'}})));
+        return;
+      }
+      e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
+    });
+  `;
+  const blob = new Blob([swCode], {type: 'application/javascript'});
+  navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(() => {});
+}
+
+// ═══════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  loadWeather();
+  loadTraffic();
+  buildScaleRef();
+
+  // Restore saved danger level
+  try {
+    const saved = localStorage.getItem('avl-danger');
+    if (saved) document.getElementById('danger-select').value = saved;
+  } catch(e) {}
+  updateDangerDisplay();
+});
+</script>
+</body>
+</html>
