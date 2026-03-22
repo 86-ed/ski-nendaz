@@ -52,10 +52,9 @@ document.head.appendChild(link);
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     background: var(--bg);
     color: var(--text);
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     padding-top: var(--safe-top);
-    padding-bottom: calc(70px + var(--safe-bot));
-    overflow-x: hidden;
   }
 
   /* ── Header ── */
@@ -104,7 +103,19 @@ document.head.appendChild(link);
   .nav-label { font-size: 9px; font-weight: 500; letter-spacing: 0.01em; }
 
   /* ── Sections ── */
-  .section { display: none; padding: 20px 16px; }
+  .section {
+    display: none;
+    padding: 20px 16px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-top: calc(var(--header-h, 80px) + 10px);
+    padding-bottom: calc(70px + var(--safe-bot) + 10px);
+  }
   .section.active { display: block; }
 
   /* ── Cards ── */
@@ -258,8 +269,7 @@ document.head.appendChild(link);
 <div class="app-header">
   <div class="header-top">
     <div>
-      <div class="resort-title">4 Vallées</div>
-      <div class="resort-sub">Verbier · Nendaz · Thyon · Veysonnaz</div>
+      <div class="resort-title">Ski Nendaz</div>
     </div>
     <div class="update-badge" id="last-update">Loading…</div>
   </div>
@@ -1034,6 +1044,14 @@ if ('serviceWorker' in navigator) {
 // INIT
 // ═══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
+  // Set header height CSS variable so sections start below it
+  const setHeaderH = () => {
+    const h = document.querySelector('.app-header').offsetHeight;
+    document.documentElement.style.setProperty('--header-h', h + 'px');
+  };
+  setHeaderH();
+  window.addEventListener('resize', setHeaderH);
+
   loadWeather();
   loadForecastTable('mid');
   loadTraffic();
