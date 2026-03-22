@@ -281,22 +281,7 @@ document.head.appendChild(link);
     <div style="margin-top:10px;font-size:11px;color:var(--muted);">Temp &amp; wind: Open-Meteo / MeteoSwiss · Snow depths: Snow-Forecast.com</div>
   </div>
 
-  <div class="card">
-    <div class="card-title">Measured snow depths</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
-      <div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:2px;">Top of resort</div>
-        <div style="font-size:22px;font-weight:700;" id="depth-top">–</div>
-      </div>
-      <div style="text-align:center;">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:2px;">Last snowfall</div>
-        <div style="font-size:14px;font-weight:600;color:var(--snow);" id="depth-lastsnow">–</div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-size:12px;color:var(--muted);margin-bottom:2px;">Bottom</div>
-        <div style="font-size:22px;font-weight:700;" id="depth-bot">–</div>
-      </div>
-    </div>
+
     <a href="https://www.snow-forecast.com/resorts/Nendaz/snow-report" target="_blank" class="webcam-link" style="margin-top:4px;">
       ↗ Full snow report · Snow-Forecast.com
     </a>
@@ -318,23 +303,6 @@ document.head.appendChild(link);
     </div>
   </div>
 
-  <button class="refresh-btn" onclick="loadWeather(); loadForecastTable(currentElev);">↻ Refresh weather</button>
-</div>
-
-<!-- WEBCAM -->
-<div class="section" id="sec-webcam">
-  <div class="card">
-    <div class="card-title">Live webcam · Siviez base station</div>
-    <div class="webcam-container">
-      <iframe 
-        src="https://nendaz.roundshot.com/siviez/#"
-        title="Siviez Roundshot Webcam"
-        allowfullscreen
-        loading="lazy"
-      ></iframe>
-    </div>
-    <div class="webcam-note">360° panorama by Roundshot · Updated every 2 min</div>
-  </div>
   <div class="card">
     <div class="card-title">Snow depth camera · La Chaux 2265m</div>
     <div class="webcam-container" style="aspect-ratio:16/9;">
@@ -477,11 +445,52 @@ document.head.appendChild(link);
   </div>
 </div>
 
-<!-- TRAILS -->
+  <button class="refresh-btn" onclick="loadWeather(); loadForecastTable(currentElev);">↻ Refresh weather</button>
+</div>
+
+<!-- WEBCAM -->
+<div class="section" id="sec-webcam">
+
+  <div class="card" style="padding:14px 16px;">
+    <div class="card-title">Select camera</div>
+    <div style="display:flex;flex-direction:column;gap:6px;" id="cam-selector">
+      <button class="traffic-tab active" style="text-align:left;padding:10px 12px;border-radius:10px;" onclick="selectCam(0)">Siviez · 1620m · base station</button>
+      <button class="traffic-tab" style="text-align:left;padding:10px 12px;border-radius:10px;" onclick="selectCam(1)">Lac du Tracouet · 2200m</button>
+      <button class="traffic-tab" style="text-align:left;padding:10px 12px;border-radius:10px;" onclick="selectCam(2)">Plan du Fou · 2340m</button>
+      <button class="traffic-tab" style="text-align:left;padding:10px 12px;border-radius:10px;" onclick="selectCam(3)">Combatseline · 2430m</button>
+      <button class="traffic-tab" style="text-align:left;padding:10px 12px;border-radius:10px;" onclick="selectCam(4)">Attelas · 2727m</button>
+      <button class="traffic-tab" style="text-align:left;padding:10px 12px;border-radius:10px;" onclick="selectCam(5)">Col des Gentianes · 2894m</button>
+      <button class="traffic-tab" style="text-align:left;padding:10px 12px;border-radius:10px;" onclick="selectCam(6)">Mont Fort · 3330m · summit</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title" id="cam-label">Live webcam · Siviez 1620m</div>
+    <div class="webcam-container">
+      <iframe id="cam-iframe"
+        src="https://nendaz.roundshot.com/siviez/#"
+        title="Live webcam"
+        allowfullscreen
+        loading="lazy"
+        style="width:100%;height:100%;border:none;display:block;"
+      ></iframe>
+    </div>
+    <div class="webcam-note">360° panorama by Roundshot · Updated every 2 min</div>
+    <a id="cam-link" class="webcam-link" href="https://nendaz.roundshot.com/siviez/#" target="_blank" style="margin-top:8px;">
+      ↗ Open full screen
+    </a>
+    <a class="webcam-link" href="https://verbier4vallees.ch/en/useful-information/webcams" target="_blank" style="margin-top:8px;">
+      ↗ All resort webcams
+    </a>
+  </div>
+
+</div>
+
+<!-- TRAILS --><!-- TRAILS -->
 <div class="section" id="sec-trails">
 
   <div class="card">
-    <div class="card-title">Live trail &amp; lift map</div>
+    <div class="card-title">Live map &amp; status</div>
     <a class="avl-link" href="https://www.nendaz.ch/en/Z13328/live-map-of-the-ski-area" target="_blank" style="display:flex;margin-bottom:10px;">
       <div>
         <div class="avl-link-title">4 Vallées live map</div>
@@ -489,53 +498,60 @@ document.head.appendChild(link);
       </div>
       <div class="avl-arrow">›</div>
     </a>
-    <a class="avl-link" href="https://www.verbier4vallees.ch/en/ski-area/4-vallees-ski-map" target="_blank" style="display:flex;">
+    <a class="avl-link" href="https://verbier4vallees.ch/en/useful-information/live-information-winter" target="_blank" style="display:flex;margin-bottom:10px;">
       <div>
-        <div class="avl-link-title">4 Vallées piste map</div>
-        <div class="avl-link-sub">Full ski area overview · Verbier4Vallees.ch</div>
+        <div class="avl-link-title">Live lift &amp; slope status</div>
+        <div class="avl-link-sub">Full open/closed list · Verbier4Vallees.ch</div>
+      </div>
+      <div class="avl-arrow">›</div>
+    </a>
+    <a class="avl-link" href="https://www.bergfex.com/nendaz-4-vallees/lifte/" target="_blank" style="display:flex;">
+      <div>
+        <div class="avl-link-title">Bergfex lift status</div>
+        <div class="avl-link-sub">Nendaz / 4 Vallées lift-by-lift overview</div>
       </div>
       <div class="avl-arrow">›</div>
     </a>
   </div>
 
   <div class="card">
-    <div class="card-title">Nendaz / Siviez area</div>
-    <a class="avl-link" href="https://www.nendaz.ch/en/Z13484/ski-area" target="_blank" style="display:flex;margin-bottom:10px;">
+    <div class="card-title">Snow report &amp; conditions</div>
+    <a class="avl-link" href="https://snow.myswitzerland.com/snow_reports/nendaz-4-vallees-139/" target="_blank" style="display:flex;margin-bottom:10px;">
       <div>
-        <div class="avl-link-title">Nendaz ski area status</div>
-        <div class="avl-link-sub">Open lifts, slopes &amp; current conditions</div>
+        <div class="avl-link-title">MySwitzerland snow report</div>
+        <div class="avl-link-sub">Official measured depths · Lifts open · Updated daily</div>
       </div>
       <div class="avl-arrow">›</div>
     </a>
-    <a class="avl-link" href="https://www.bergfex.com/nendaz-4-vallees/pisten/" target="_blank" style="display:flex;margin-bottom:10px;">
+    <a class="avl-link" href="https://www.snow-forecast.com/resorts/Nendaz/6day/mid" target="_blank" style="display:flex;margin-bottom:10px;">
       <div>
-        <div class="avl-link-title">Bergfex piste status</div>
-        <div class="avl-link-sub">Run-by-run open/closed overview</div>
+        <div class="avl-link-title">Snow-Forecast.com</div>
+        <div class="avl-link-sub">6-day ski forecast · Top / mid / bottom elevations</div>
       </div>
       <div class="avl-arrow">›</div>
     </a>
-    <a class="avl-link" href="https://www.nendaz.ch/en/Z13927/winter-lifts-schedule" target="_blank" style="display:flex;">
+    <a class="avl-link" href="https://www.bergfex.com/nendaz-4-vallees/schneebericht/" target="_blank" style="display:flex;">
+      <div>
+        <div class="avl-link-title">Bergfex snow report</div>
+        <div class="avl-link-sub">Snow depths &amp; piste conditions</div>
+      </div>
+      <div class="avl-arrow">›</div>
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Lift opening times &amp; passes</div>
+    <a class="avl-link" href="https://www.nendaz.ch/en/Z13927/lifts-winter-opening-times" target="_blank" style="display:flex;margin-bottom:10px;">
       <div>
         <div class="avl-link-title">Lift opening times</div>
-        <div class="avl-link-sub">First &amp; last lift · All lifts schedule</div>
+        <div class="avl-link-sub">First &amp; last lift · All lifts schedule · Nendaz.ch</div>
       </div>
       <div class="avl-arrow">›</div>
     </a>
-  </div>
-
-  <div class="card">
-    <div class="card-title">Verbier &amp; full 4 Vallées</div>
-    <a class="avl-link" href="https://www.verbier.ch/en/ski-snowboard/ski-area/ski-area-status/" target="_blank" style="display:flex;margin-bottom:10px;">
+    <a class="avl-link" href="https://shop.nendazveysonnaz.ch" target="_blank" style="display:flex;">
       <div>
-        <div class="avl-link-title">Verbier ski area status</div>
-        <div class="avl-link-sub">Live lift &amp; run status for Verbier sector</div>
-      </div>
-      <div class="avl-arrow">›</div>
-    </a>
-    <a class="avl-link" href="https://www.verbier4vallees.ch/en/ski-area/lifts-and-slopes" target="_blank" style="display:flex;">
-      <div>
-        <div class="avl-link-title">All lifts &amp; slopes status</div>
-        <div class="avl-link-sub">Complete 4 Vallées open/closed list</div>
+        <div class="avl-link-title">Buy ski pass online</div>
+        <div class="avl-link-sub">Nendaz / Veysonnaz official shop</div>
       </div>
       <div class="avl-arrow">›</div>
     </a>
@@ -551,18 +567,18 @@ document.head.appendChild(link);
       </div>
       <div style="background:var(--surface2);border-radius:10px;padding:12px;">
         <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Lifts</div>
-        <div style="font-size:20px;font-weight:700;color:var(--text);">81</div>
+        <div style="font-size:20px;font-weight:700;color:var(--text);">92</div>
         <div style="font-size:11px;color:var(--muted);">4 Vallées total</div>
       </div>
       <div style="background:var(--surface2);border-radius:10px;padding:12px;">
         <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Altitude range</div>
-        <div style="font-size:16px;font-weight:700;color:var(--text);">821–3330m</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);">1350–3330m</div>
         <div style="font-size:11px;color:var(--muted);">Nendaz 1365–3330m</div>
       </div>
       <div style="background:var(--surface2);border-radius:10px;padding:12px;">
-        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Snow guarantee</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:4px;">Season</div>
         <div style="font-size:16px;font-weight:700;color:var(--text);">Dec–Apr</div>
-        <div style="font-size:11px;color:var(--muted);">Above 2000m</div>
+        <div style="font-size:11px;color:var(--muted);">Dec 2025 – Apr 2026</div>
       </div>
     </div>
   </div>
@@ -575,21 +591,21 @@ document.head.appendChild(link);
     <span class="nav-icon">❄️</span>
     <span class="nav-label">Snow</span>
   </button>
-  <button class="nav-btn" id="nav-webcam" onclick="showSection('webcam')">
-    <span class="nav-icon">📷</span>
-    <span class="nav-label">Webcam</span>
+  <button class="nav-btn" id="nav-avalanche" onclick="showSection('avalanche')">
+    <span class="nav-icon">⚠️</span>
+    <span class="nav-label">Avalanche</span>
   </button>
   <button class="nav-btn" id="nav-trails" onclick="showSection('trails')">
     <span class="nav-icon">🎿</span>
     <span class="nav-label">Trails</span>
   </button>
+  <button class="nav-btn" id="nav-webcam" onclick="showSection('webcam')">
+    <span class="nav-icon">📷</span>
+    <span class="nav-label">Webcam</span>
+  </button>
   <button class="nav-btn" id="nav-traffic" onclick="showSection('traffic')">
     <span class="nav-icon">🚗</span>
     <span class="nav-label">Traffic</span>
-  </button>
-  <button class="nav-btn" id="nav-avalanche" onclick="showSection('avalanche')">
-    <span class="nav-icon">⚠️</span>
-    <span class="nav-label">Avalanche</span>
   </button>
 </nav>
 
@@ -648,35 +664,6 @@ async function loadWeather() {
     document.getElementById('last-update').textContent = 'Updated ' + now.toLocaleTimeString('en-CH', {hour:'2-digit',minute:'2-digit'});
   } catch(e) {
     document.getElementById('snow-metrics').innerHTML = `<div class="error-text" style="grid-column:1/-1;">⚠ Could not load weather.<br><small>${e.message}</small></div>`;
-  }
-
-  // ── Snow depths: fetch Snow-Forecast snow report page and parse ──
-  try {
-    const sfUrl = 'https://www.snow-forecast.com/resorts/Nendaz/snow-report';
-    const resp = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(sfUrl)}`);
-    const json = await resp.json();
-    const html = json.contents || '';
-
-    // Parse top/bottom snow depth and last snowfall from the page text
-    const topMatch = html.match(/Top snow depth[^<]*<[^>]+>([^<]+)/i) ||
-                     html.match(/top.*?(\d+)\s*cm/i);
-    const botMatch = html.match(/Bottom snow depth[^<]*<[^>]+>([^<]+)/i) ||
-                     html.match(/bottom.*?(\d+)\s*cm/i);
-    const lastSnowMatch = html.match(/Last snowfall[^<]*<[^>]+>([^<]+)/i) ||
-                          html.match(/last snowfall[:\s]+([A-Za-z0-9 ]+)/i);
-
-    const topDepth = topMatch ? topMatch[1].trim().replace(/[^\d\s\-–cm]/g,'').trim() : '–';
-    const botDepth = botMatch ? botMatch[1].trim().replace(/[^\d\s\-–cm]/g,'').trim() : '–';
-    const lastSnow = lastSnowMatch ? lastSnowMatch[1].trim() : '–';
-
-    document.getElementById('depth-top').textContent = topDepth.match(/\d/) ? topDepth : '–';
-    document.getElementById('depth-bot').textContent = botDepth.match(/\d/) ? botDepth : '–';
-    document.getElementById('depth-lastsnow').textContent = lastSnow;
-  } catch(e) {
-    // Silently fail — the link to Snow-Forecast is still there
-    document.getElementById('depth-top').textContent = 'see link';
-    document.getElementById('depth-bot').textContent = 'see link';
-    document.getElementById('depth-lastsnow').textContent = 'see link ↗';
   }
 }
 
@@ -996,6 +983,30 @@ function buildScaleRef() {
       </div>
     </div>
   `).join('');
+}
+
+
+// ═══════════════════════════════════════════
+// WEBCAM SELECTOR
+// ═══════════════════════════════════════════
+const CAMS = [
+  { label: 'Live webcam · Siviez 1620m',           url: 'https://nendaz.roundshot.com/siviez/#' },
+  { label: 'Live webcam · Lac du Tracouet 2200m',  url: 'https://nendaz.roundshot.com/lacdetracouet/#' },
+  { label: 'Live webcam · Plan du Fou 2340m',      url: 'https://nendaz.roundshot.com/plandufou/#' },
+  { label: 'Live webcam · Combatseline 2430m',     url: 'https://nendaz.roundshot.com/combatseline/#' },
+  { label: 'Live webcam · Attelas 2727m',          url: 'https://verbier.roundshot.com/les-attelas/#' },
+  { label: 'Live webcam · Col des Gentianes 2894m',url: 'https://nendaz.roundshot.com/coldesgentianes/#' },
+  { label: 'Live webcam · Mont Fort 3330m',        url: 'https://verbier.roundshot.com/montfort/#' },
+];
+
+function selectCam(idx) {
+  const cam = CAMS[idx];
+  document.getElementById('cam-iframe').src = cam.url;
+  document.getElementById('cam-label').textContent = cam.label;
+  document.getElementById('cam-link').href = cam.url;
+  document.querySelectorAll('#cam-selector button').forEach((b, i) => {
+    b.classList.toggle('active', i === idx);
+  });
 }
 
 // ═══════════════════════════════════════════
