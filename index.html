@@ -776,7 +776,7 @@ async function loadForecastTable(elev) {
         if (!slot.length) return '<td style="text-align:center;padding:8px 4px;color:var(--muted);font-size:12px;">–</td>';
         const temp = Math.round(slotAvg(slot, 'temp'));
         const wind = Math.round(slotAvg(slot, 'wind'));
-        const snowCm = Math.round(slotSum(slot, 'snow') * 10);
+        const snowCm = Math.round(slotSum(slot, 'snow'));
         const icon = wmoIcon(slotMode(slot, 'code'));
         const snowHtml = snowCm > 0
           ? `<div style="font-size:11px;color:var(--snow);font-weight:600;margin-top:2px;">❄ ${snowCm}cm</div>`
