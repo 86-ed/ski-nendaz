@@ -292,7 +292,7 @@ document.head.appendChild(link);
       <div class="loading-text"><span class="spinner"></span>Fetching forecast…</div>
     </div>
     <div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">
-      Snowfall: ECMWF AIFS · Temp/wind/freeze: MeteoSwiss · 0°C = freeze level in metres (green &lt;1500m, amber 1500–2300m, red &gt;2300m) ·
+      Snowfall: ECMWF AIFS · Temp/wind/freeze: MeteoSwiss · Freeze = freezing level in metres (green &lt;1500m, amber 1500–2300m, red &gt;2300m) ·
       <a href="https://www.snow-forecast.com/resorts/Nendaz/6day/mid" target="_blank" style="color:var(--accent);">Snow-Forecast.com ↗</a>
     </div>
   </div>
@@ -593,18 +593,25 @@ async function loadForecastTable(elev) {
   try {
     // MeteoSwiss ICON for temp/wind/weathercode (high res, reliable)
     // ECMWF AIFS for snowfall (newest AI model, best alpine performance)
-    const [r1, r2, r3] = await Promise.all([
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,weathercode&timezone=Europe%2FZurich&forecast_days=7&models=meteoswiss_icon_ch2`),
-      fetch(`https://api.open-meteo.com/v1/ecmwf?latitude=${lat}&longitude=${lon}&hourly=snowfall&timezone=Europe%2FZurich&forecast_days=7&models=ecmwf_aifs025_single`),
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=freezinglevel_height&timezone=Europe%2FZurich&forecast_days=7&models=ecmwf_ifs025`)
+    const [r1, r2] = await Promise.all([
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,weathercode,temperature_850hPa,temperature_700hPa&timezone=Europe%2FZurich&forecast_days=7&models=meteoswiss_icon_ch2`),
+      fetch(`https://api.open-meteo.com/v1/ecmwf?latitude=${lat}&longitude=${lon}&hourly=snowfall&timezone=Europe%2FZurich&forecast_days=7&models=ecmwf_aifs025_single`)
     ]);
     const d = await r1.json();
     const dSnow = await r2.json();
-    const dFreeze = await r3.json();
     // Use AIFS snowfall if available
     d.hourly.snowfall = (dSnow.hourly && dSnow.hourly.snowfall) ? dSnow.hourly.snowfall : [];
-    // Use ECMWF IFS for freeze level (reliable, avoids MeteoSwiss invalid values)
-    d.hourly.freezinglevel_height = (dFreeze.hourly && dFreeze.hourly.freezinglevel_height) ? dFreeze.hourly.freezinglevel_height : [];
+    // Calculate freeze level from 850hPa (~1500m) and 700hPa (~3000m) temperatures
+    // Linear interpolation: if T850 > 0 freeze is below 1500m, if T700 < 0 freeze is above 3000m
+    // Between: freeze_m = 1500 + (3000-1500) * (T850 / (T850 - T700))
+    d.hourly.freezinglevel_height = (d.hourly.temperature_850hPa || []).map((t850, i) => {
+      const t700 = (d.hourly.temperature_700hPa || [])[i];
+      if (t850 == null || t700 == null) return null;
+      if (t850 <= 0) return 1500; // freeze below 850hPa level
+      if (t700 >= 0) return 3000; // freeze above 700hPa level
+      // interpolate between 1500m and 3000m
+      return Math.round(1500 + 1500 * (t850 / (t850 - t700)));
+    });
 
     const wmoIcon = code => {
       if (code === 0) return '☀️';
@@ -662,7 +669,7 @@ async function loadForecastTable(elev) {
             <th style="font-size:11px;color:var(--muted);font-weight:500;text-align:center;padding:6px 4px 8px;">PM</th>
             <th style="font-size:11px;color:var(--muted);font-weight:500;text-align:center;padding:6px 4px 8px;">Night</th>
             <th style="font-size:11px;color:var(--snow);font-weight:500;text-align:center;padding:6px 4px 8px;">Total</th>
-            <th style="font-size:11px;color:#ffb74d;font-weight:500;text-align:center;padding:6px 4px 8px;">0°C</th>
+            <th style="font-size:11px;color:#ffb74d;font-weight:500;text-align:center;padding:6px 4px 8px;">Freeze</th>
           </tr>
         </thead>
         <tbody>`;
