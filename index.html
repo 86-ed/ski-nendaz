@@ -280,20 +280,8 @@ document.head.appendChild(link);
     </div>
     <div style="margin-top:10px;font-size:11px;color:var(--muted);">Temp &amp; wind: Open-Meteo / MeteoSwiss · Snow depths: Snow-Forecast.com</div>
   </div>
-
-
-  <div class="card">
-    <div class="card-title">6-day snow forecast · AM / PM / Night</div>
-    <div style="display:flex;gap:6px;margin-bottom:14px;">
-      <button class="traffic-tab active" id="elev-mid" onclick="setElevation('mid')">Mid 2348m</button>
-      <button class="traffic-tab" id="elev-top" onclick="setElevation('top')">Top 3331m</button>
-      <button class="traffic-tab" id="elev-bot" onclick="setElevation('bot')">Bottom 1365m</button>
-    </div>
-    <div id="forecast-table-wrap">
-      <div class="loading-text"><span class="spinner"></span>Fetching forecast…</div>
-    </div>
     <div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">
-      ECMWF model via Open-Meteo ·
+      ECMWF AIFS model via Open-Meteo ·
       <a href="https://www.snow-forecast.com/resorts/Nendaz/6day/mid" target="_blank" style="color:var(--accent);">Snow-Forecast.com ↗</a>
     </div>
   </div>
@@ -316,20 +304,6 @@ document.head.appendChild(link);
       ↗ Open full view + time-lapse
     </a>
   </div>
-
-  <div class="card">
-    <div class="card-title">More webcams</div>
-    <a class="webcam-link" href="https://nendaz.roundshot.com/combatseline/" target="_blank">
-      ↗ Combatseline (mid-mountain)
-    </a>
-    <a class="webcam-link" href="https://verbier.roundshot.com/montfort/" target="_blank" style="margin-top:8px;">
-      ↗ Mont Fort (summit 3300m)
-    </a>
-    <a class="webcam-link" href="https://verbier4vallees.ch/en/useful-information/webcams" target="_blank" style="margin-top:8px;">
-      ↗ All resort webcams
-    </a>
-  </div>
-</div>
 
 <!-- TRAFFIC -->
 <div class="section" id="sec-traffic">
@@ -500,13 +474,6 @@ document.head.appendChild(link);
   </div>
       <div class="avl-arrow">›</div>
     </a>
-    <a class="avl-link" href="https://www.snow-forecast.com/resorts/Nendaz/6day/mid" target="_blank" style="display:flex;margin-bottom:10px;">
-      <div>
-        <div class="avl-link-title">Snow-Forecast.com</div>
-        <div class="avl-link-sub">6-day ski forecast · Top / mid / bottom elevations</div>
-      </div>
-      <div class="avl-arrow">›</div>
-    </a>
   </div>
 
 <!-- ═══ BOTTOM NAV ═══ -->
@@ -610,14 +577,15 @@ async function loadForecastTable(elev) {
   const {lat, lon} = ELEV_COORDS[elev];
   try {
     // MeteoSwiss ICON for temp/wind/weathercode (high res, reliable)
-    // ECMWF IFS for snowfall only (avoids MeteoSwiss snowfall invalid-values bug)
+    // ECMWF AIFS for snowfall (newest AI model, best alpine performance)
     const [r1, r2] = await Promise.all([
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,weathercode&timezone=Europe%2FZurich&forecast_days=7&models=meteoswiss_icon_ch2`),
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=snowfall&timezone=Europe%2FZurich&forecast_days=7&models=ecmwf_ifs025`)
+      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,weathercode,freezinglevel_height&timezone=Europe%2FZurich&forecast_days=7&models=meteoswiss_icon_ch2`),
+      fetch(`https://api.open-meteo.com/v1/ecmwf?latitude=${lat}&longitude=${lon}&hourly=snowfall&timezone=Europe%2FZurich&forecast_days=7&models=ecmwf_aifs025_single`)
     ]);
     const d = await r1.json();
     const dSnow = await r2.json();
-    d.hourly.snowfall = dSnow.hourly.snowfall;
+    // Use AIFS snowfall if available, fall back to IFS
+    d.hourly.snowfall = (dSnow.hourly && dSnow.hourly.snowfall) ? dSnow.hourly.snowfall : d.hourly.snowfall;
 
     const wmoIcon = code => {
       if (code === 0) return '☀️';
@@ -647,7 +615,8 @@ async function loadForecastTable(elev) {
         temp: d.hourly.temperature_2m[i],
         wind: d.hourly.windspeed_10m[i],
         snow: d.hourly.snowfall[i] || 0,
-        code: d.hourly.weathercode[i]
+        code: d.hourly.weathercode[i],
+        freeze: d.hourly.freezinglevel_height[i] || 0
       });
     });
 
@@ -669,13 +638,18 @@ async function loadForecastTable(elev) {
       <table style="width:100%;border-collapse:collapse;min-width:340px;">
         <thead>
           <tr style="border-bottom:1px solid var(--border);">
-            <th style="font-size:11px;color:var(--muted);font-weight:500;text-align:left;padding:6px 6px 8px;width:70px;">Day</th>
+            <th style="font-size:11px;color:var(--muted);font-weight:500;text-align:left;padding:6px 6px 8px;width:60px;">Day</th>
             <th style="font-size:11px;color:var(--muted);font-weight:500;text-align:center;padding:6px 4px 8px;">AM</th>
             <th style="font-size:11px;color:var(--muted);font-weight:500;text-align:center;padding:6px 4px 8px;">PM</th>
             <th style="font-size:11px;color:var(--muted);font-weight:500;text-align:center;padding:6px 4px 8px;">Night</th>
+            <th style="font-size:11px;color:var(--snow);font-weight:500;text-align:center;padding:6px 4px 8px;">Total</th>
+            <th style="font-size:11px;color:#ffb74d;font-weight:500;text-align:center;padding:6px 4px 8px;">0°C</th>
           </tr>
         </thead>
         <tbody>`;
+
+    // Build debug data too
+    const debugLines = [];
 
     dateKeys.forEach(dk => {
       const day = days[dk];
@@ -683,14 +657,20 @@ async function loadForecastTable(elev) {
       const label = dk === today ? 'Today' : dayNames[dt.getDay()];
       const dateStr = dt.toLocaleDateString('en-CH', {day:'numeric',month:'short'});
 
-      const renderSlot = (slot) => {
+      const amSnow = Math.round(slotSum(day.am, 'snow'));
+      const pmSnow = Math.round(slotSum(day.pm, 'snow'));
+      const ngtSnow = Math.round(slotSum(day.ngt, 'snow'));
+      const dayTotal = amSnow + pmSnow + ngtSnow;
+
+      debugLines.push(`${label} ${dateStr}: AM=${amSnow}cm PM=${pmSnow}cm NGT=${ngtSnow}cm → Total=${dayTotal}cm`);
+
+      const renderSlot = (slot, slotSnow) => {
         if (!slot.length) return '<td style="text-align:center;padding:8px 4px;color:var(--muted);font-size:12px;">–</td>';
         const temp = Math.round(slotAvg(slot, 'temp'));
         const wind = Math.round(slotAvg(slot, 'wind'));
-        const snowCm = Math.round(slotSum(slot, 'snow'));
         const icon = wmoIcon(slotMode(slot, 'code'));
-        const snowHtml = snowCm > 0
-          ? `<div style="font-size:11px;color:var(--snow);font-weight:600;margin-top:2px;">❄ ${snowCm}cm</div>`
+        const snowHtml = slotSnow > 0
+          ? `<div style="font-size:11px;color:var(--snow);font-weight:600;margin-top:2px;">❄ ${slotSnow}cm</div>`
           : `<div style="font-size:11px;color:var(--muted);margin-top:2px;">–</div>`;
         return `<td style="text-align:center;padding:8px 4px;border-bottom:1px solid var(--border);">
           <div style="font-size:18px;line-height:1;">${icon}</div>
@@ -700,21 +680,33 @@ async function loadForecastTable(elev) {
         </td>`;
       };
 
+      const totalHtml = dayTotal > 0
+        ? `<td style="text-align:center;padding:8px 4px;border-bottom:1px solid var(--border);font-size:13px;font-weight:700;color:var(--snow);">❄ ${dayTotal}cm</td>`
+        : `<td style="text-align:center;padding:8px 4px;border-bottom:1px solid var(--border);font-size:12px;color:var(--muted);">–</td>`;
+
+      // Average freeze level across all slots for the day
+      const allSlots = [...day.am, ...day.pm, ...day.ngt];
+      const avgFreeze = allSlots.length ? Math.round(slotAvg(allSlots, 'freeze') / 100) * 100 : null;
+      const freezeColor = avgFreeze !== null && avgFreeze < 1500 ? '#81c784' : avgFreeze !== null && avgFreeze < 2300 ? '#ffb74d' : '#ef9a9a';
+      const freezeHtml = avgFreeze !== null
+        ? `<td style="text-align:center;padding:8px 4px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:${freezeColor};">${(avgFreeze/1000).toFixed(1)}km</td>`
+        : `<td style="text-align:center;padding:8px 4px;border-bottom:1px solid var(--border);color:var(--muted);">–</td>`;
+
       html += `<tr>
         <td style="padding:8px 6px;border-bottom:1px solid var(--border);vertical-align:middle;">
           <div style="font-size:13px;font-weight:600;color:var(--text);">${label}</div>
           <div style="font-size:11px;color:var(--muted);">${dateStr}</div>
         </td>
-        ${renderSlot(day.am)}
-        ${renderSlot(day.pm)}
-        ${renderSlot(day.ngt)}
+        ${renderSlot(day.am, amSnow)}
+        ${renderSlot(day.pm, pmSnow)}
+        ${renderSlot(day.ngt, ngtSnow)}
+        ${totalHtml}
+        ${freezeHtml}
       </tr>`;
     });
 
     html += '</tbody></table></div>';
-    html += `<div style="display:flex;gap:16px;margin-top:12px;font-size:11px;color:var(--muted);justify-content:center;">
-      <span>☀️ clear</span><span>❄️ snow</span><span>🌨️ heavy snow</span><span style="color:var(--snow);">❄ Xcm = fresh snow</span>
-    </div>`;
+    html += `<div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">Snowfall: ECMWF AIFS · Temp/wind/freeze: MeteoSwiss · 0°C = freeze level (green <1500m, amber 1500–2300m, red >2300m)</div>`;
     wrap.innerHTML = html;
   } catch(e) {
     wrap.innerHTML = `<div class="error-text">⚠ Could not load forecast.<br><small>${e.message}</small><br><a href="https://www.snow-forecast.com/resorts/Nendaz/6day/mid" target="_blank" style="color:var(--accent);">Open Snow-Forecast.com ↗</a></div>`;
@@ -910,9 +902,11 @@ function buildScaleRef() {
 }
 
 
+
 // ═══════════════════════════════════════════
 // WEBCAM SELECTOR
 // ═══════════════════════════════════════════
+
 const CAMS = [
   { label: 'Live webcam · Siviez 1620m',           url: 'https://nendaz.roundshot.com/siviez/#' },
   { label: 'Live webcam · Lac du Tracouet 2200m',  url: 'https://nendaz.roundshot.com/lacdetracouet/#' },
