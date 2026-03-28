@@ -783,15 +783,49 @@ function fmtMins(secs) {
   return h > 0 ? `${h}h ${rm}min` : `${m} min`;
 }
 
-async function fetchOneRoute(origin, dest, departureSec) {
-  if (!GMAPS_KEY || GMAPS_KEY === 'YOUR_GOOGLE_MAPS_API_KEY') {
-    // Fallback: estimated times based on typical patterns
-    return null;
-  }
-  const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${dest}&departure_time=${departureSec}&traffic_model=best_guess&key=${GMAPS_KEY}`;
-  const r = await fetch(url);
-  const d = await r.json();
-  return d?.rows?.[0]?.elements?.[0];
+// Load Google Maps JS API dynamically (browser-safe, avoids CORS)
+let gmapsLoaded = false;
+let gmapsLoading = false;
+let gmapsCallbacks = [];
+
+function loadGoogleMaps() {
+  return new Promise((resolve, reject) => {
+    if (gmapsLoaded) { resolve(); return; }
+    gmapsCallbacks.push({ resolve, reject });
+    if (gmapsLoading) return;
+    gmapsLoading = true;
+    window._gmapsReady = () => {
+      gmapsLoaded = true;
+      gmapsCallbacks.forEach(cb => cb.resolve());
+      gmapsCallbacks = [];
+    };
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GMAPS_KEY}&callback=_gmapsReady&loading=async`;
+    script.onerror = () => gmapsCallbacks.forEach(cb => cb.reject(new Error('Maps failed to load')));
+    document.head.appendChild(script);
+  });
+}
+
+async function fetchOneRoute(originLatLng, destLatLng, departureTime) {
+  await loadGoogleMaps();
+  return new Promise((resolve) => {
+    const service = new google.maps.DistanceMatrixService();
+    service.getDistanceMatrix({
+      origins: [originLatLng],
+      destinations: [destLatLng],
+      travelMode: google.maps.TravelMode.DRIVING,
+      drivingOptions: {
+        departureTime,
+        trafficModel: google.maps.TrafficModel.BEST_GUESS
+      }
+    }, (response, status) => {
+      if (status === 'OK') {
+        resolve(response?.rows?.[0]?.elements?.[0]);
+      } else {
+        resolve(null);
+      }
+    });
+  });
 }
 
 // Fallback estimated times (without API key) based on typical Friday/Sunday patterns
@@ -849,13 +883,15 @@ async function loadTraffic() {
     async function buildRows(hours, dayOfWeek, origin, dest) {
       const rows = [];
       for (const h of hours) {
-        const depSec = nextWeekdayAt(dayOfWeek, h);
-        const el = await fetchOneRoute(origin, dest, depSec);
+        const depDate = new Date();
+        const diff = (dayOfWeek - depDate.getDay() + 7) % 7;
+        depDate.setDate(depDate.getDate() + (diff === 0 && depDate.getHours() >= h ? 7 : diff));
+        depDate.setHours(h, 0, 0, 0);
+        const el = await fetchOneRoute(origin, dest, depDate);
         if (el && el.status === 'OK') {
           const mins = Math.round(el.duration_in_traffic.value / 60);
           const depTime = `${String(h).padStart(2,'0')}:00`;
-          const arrDate = new Date(Date.now()); arrDate.setHours(h,0,0,0);
-          arrDate.setSeconds(arrDate.getSeconds() + el.duration_in_traffic.value);
+          const arrDate = new Date(depDate.getTime() + el.duration_in_traffic.value * 1000);
           const arrTime = arrDate.toLocaleTimeString('en-CH',{hour:'2-digit',minute:'2-digit'});
           let label = mins < 120 ? 'Light' : mins < 145 ? 'Moderate' : 'Heavy';
           rows.push({ dep: depTime, arr: arrTime, mins, label });
@@ -864,9 +900,13 @@ async function loadTraffic() {
       return rows;
     }
 
+    await loadGoogleMaps();
+    const commugnyLatLng = new google.maps.LatLng(46.3169, 6.2132);
+    const nendazLatLng   = new google.maps.LatLng(46.1757, 7.2942);
+
     const [friRows, sunRows] = await Promise.all([
-      buildRows(friHours, 5, COMMUGNY, NENDAZ),
-      buildRows(sunHours, 0, NENDAZ, COMMUGNY)
+      buildRows(friHours, 5, commugnyLatLng, nendazLatLng),
+      buildRows(sunHours, 0, nendazLatLng, commugnyLatLng)
     ]);
 
     renderTrafficTable(friRows.length ? friRows : FRI_ESTIMATES, 'fri-rows');
