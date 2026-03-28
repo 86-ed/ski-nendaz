@@ -278,10 +278,21 @@ document.head.appendChild(link);
       <div class="snow-metric"><div class="snow-metric-label">Loading…</div><div class="skeleton" style="height:36px;margin-top:4px;"></div></div>
       <div class="snow-metric"><div class="snow-metric-label">Loading…</div><div class="skeleton" style="height:36px;margin-top:4px;"></div></div>
     </div>
-    <div style="margin-top:10px;font-size:11px;color:var(--muted);">Temp &amp; wind: Open-Meteo / MeteoSwiss · Snow depths: Snow-Forecast.com</div>
+    <div style="margin-top:10px;font-size:11px;color:var(--muted);">Temp &amp; wind: Open-Meteo / MeteoSwiss · Snowfall: ECMWF AIFS</div>
   </div>
+
+  <div class="card">
+    <div class="card-title">6-day snow forecast · AM / PM / Night</div>
+    <div style="display:flex;gap:6px;margin-bottom:14px;">
+      <button class="traffic-tab active" id="elev-mid" onclick="setElevation('mid')">Mid 2348m</button>
+      <button class="traffic-tab" id="elev-top" onclick="setElevation('top')">Top 3331m</button>
+      <button class="traffic-tab" id="elev-bot" onclick="setElevation('bot')">Bottom 1365m</button>
+    </div>
+    <div id="forecast-table-wrap">
+      <div class="loading-text"><span class="spinner"></span>Fetching forecast…</div>
+    </div>
     <div style="margin-top:10px;font-size:11px;color:var(--muted);text-align:center;">
-      ECMWF AIFS model via Open-Meteo ·
+      Snowfall: ECMWF AIFS · Temp/wind/freeze: MeteoSwiss · 0°C = freeze level (green &lt;1500m, amber 1500–2300m, red &gt;2300m) ·
       <a href="https://www.snow-forecast.com/resorts/Nendaz/6day/mid" target="_blank" style="color:var(--accent);">Snow-Forecast.com ↗</a>
     </div>
   </div>
@@ -304,6 +315,10 @@ document.head.appendChild(link);
       ↗ Open full view + time-lapse
     </a>
   </div>
+
+  <button class="refresh-btn" onclick="loadWeather(); loadForecastTable(currentElev);">↻ Refresh weather</button>
+
+</div>
 
 <!-- TRAFFIC -->
 <div class="section" id="sec-traffic">
