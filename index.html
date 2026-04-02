@@ -52,17 +52,14 @@ document.head.appendChild(link);
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
     background: var(--bg);
     color: var(--text);
-    min-height: 100vh;
-    padding-top: var(--safe-top);
-    padding-bottom: calc(70px + var(--safe-bot));
-    overflow-x: hidden;
+    overflow: hidden;
+    height: 100vh;
   }
 
   /* ── Header ── */
   .app-header {
     padding: 18px 20px 12px;
-    position: sticky;
-    top: 0;
+    padding-top: calc(18px + var(--safe-top));
     background: rgba(15, 25, 35, 0.92);
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
@@ -112,12 +109,13 @@ document.head.appendChild(link);
     flex-direction: column;
     overflow: hidden;
   }
-  .content-wrap .app-header { flex-shrink: 0; position: relative; top: auto; }
   .sections-scroll {
     flex: 1;
-    overflow-y: auto;
+    overflow-y: scroll;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
     padding-bottom: calc(70px + var(--safe-bot));
+    will-change: scroll-position;
   }
 
   /* ── Sections ── */
