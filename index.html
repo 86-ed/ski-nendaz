@@ -1008,7 +1008,7 @@ function selectCam(idx) {
 // ═══════════════════════════════════════════
 if ('serviceWorker' in navigator) {
   const swCode = `
-    const CACHE = 'ski-v1';
+    const CACHE = 'ski-v3';
     self.addEventListener('install', e => {
       e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
     });
