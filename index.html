@@ -487,9 +487,6 @@ document.head.appendChild(link);
       <div class="avl-arrow">›</div>
     </a>
   </div>
-      <div class="avl-arrow">›</div>
-    </a>
-  </div>
 
 <!-- ═══ BOTTOM NAV ═══ -->
 <nav class="bottom-nav">
@@ -537,8 +534,7 @@ async function loadWeather() {
   // ── Open-Meteo: temperature & wind ONLY (reliable fields) ──
   try {
     const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&hourly=temperature_2m,windspeed_10m,weathercode&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=Europe%2FZurich&forecast_days=1&models=meteoswiss_icon_ch2`;
-    const r = await fetch(url);
-    const d = await r.json();
+    const d = await cachedFetch(url, 600000); // cache 10 min
     const hourIdx = Math.min(now.getHours(), (d.hourly.temperature_2m || []).length - 1);
     const temp = Math.round(d.hourly.temperature_2m[hourIdx]);
     const wind = Math.round(d.hourly.windspeed_10m[hourIdx]);
@@ -594,13 +590,11 @@ async function loadForecastTable(elev) {
     // MeteoSwiss ICON for temp/wind/weathercode (high res, reliable)
     // ECMWF AIFS for snowfall (newest AI model, best alpine performance)
     const [r1, r2, r3] = await Promise.all([
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,weathercode&timezone=Europe%2FZurich&forecast_days=7&models=meteoswiss_icon_ch2`),
-      fetch(`https://api.open-meteo.com/v1/ecmwf?latitude=${lat}&longitude=${lon}&hourly=snowfall&timezone=Europe%2FZurich&forecast_days=7&models=ecmwf_aifs025_single`),
-      fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_850hPa,temperature_700hPa&timezone=Europe%2FZurich&forecast_days=7&models=ecmwf_ifs025`)
+      cachedFetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_2m,windspeed_10m,weathercode&timezone=Europe%2FZurich&forecast_days=7&models=meteoswiss_icon_ch2`),
+      cachedFetch(`https://api.open-meteo.com/v1/ecmwf?latitude=${lat}&longitude=${lon}&hourly=snowfall&timezone=Europe%2FZurich&forecast_days=7&models=ecmwf_aifs025_single`),
+      cachedFetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=temperature_850hPa,temperature_700hPa&timezone=Europe%2FZurich&forecast_days=7&models=ecmwf_ifs025`)
     ]);
-    const d = await r1.json();
-    const dSnow = await r2.json();
-    const dFreeze = await r3.json();
+    const [d, dSnow, dFreeze] = [r1, r2, r3];
     // Use AIFS snowfall if available
     d.hourly.snowfall = (dSnow.hourly && dSnow.hourly.snowfall) ? dSnow.hourly.snowfall : [];
     // Calculate freeze level from ECMWF IFS 850hPa (~1500m) and 700hPa (~3000m) temperatures
@@ -745,6 +739,7 @@ function setElevation(elev) {
   ['mid','top','bot'].forEach(e => document.getElementById('elev-'+e).classList.remove('active'));
   document.getElementById('elev-'+elev).classList.add('active');
   currentElev = elev;
+  try { localStorage.setItem('pref-elev', elev); } catch(e) {}
   loadForecastTable(elev);
 }
 
@@ -755,7 +750,20 @@ function setElevation(elev) {
 // ═══════════════════════════════════════════
 
 // ⚠️ INSERT YOUR GOOGLE MAPS API KEY HERE
-const GMAPS_KEY = 'AIzaSyCpmbpQdKavny8YLKn7RdVzQ8ChRingCe4';
+const GMAPS_KEY = 'AIzaSyCaspJKagTjhBz0MAj6SjD6YDXPXvoGdHk';
+
+// Simple in-memory API cache (5 min TTL)
+const _apiCache = {};
+async function cachedFetch(url, ttl = 300000) {
+  const now = Date.now();
+  if (_apiCache[url] && now - _apiCache[url].time < ttl) {
+    return _apiCache[url].data;
+  }
+  const res = await fetch(url);
+  const data = await res.json();
+  _apiCache[url] = { data, time: now };
+  return data;
+}
 
 const COMMUGNY = '46.3169,6.2132';
 const NENDAZ   = '46.1757,7.2942';
@@ -1021,8 +1029,14 @@ if ('serviceWorker' in navigator) {
 // ═══════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
 
+  // Restore saved elevation preference
+  try {
+    const savedElev = localStorage.getItem('pref-elev');
+    if (savedElev) { currentElev = savedElev; setElevation(savedElev); }
+    else { loadForecastTable('mid'); }
+  } catch(e) { loadForecastTable('mid'); }
+
   loadWeather();
-  loadForecastTable('mid');
   loadTraffic();
   buildScaleRef();
 
@@ -1034,8 +1048,5 @@ window.addEventListener('DOMContentLoaded', () => {
   updateDangerDisplay();
 });
 </script>
-</body>
-</html>
-
 </body>
 </html>
