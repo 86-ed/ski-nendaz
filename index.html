@@ -104,6 +104,22 @@ document.head.appendChild(link);
   .nav-icon { font-size: 20px; line-height: 1; }
   .nav-label { font-size: 9px; font-weight: 500; letter-spacing: 0.01em; }
 
+  /* ── App shell ── */
+  .content-wrap {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .content-wrap .app-header { flex-shrink: 0; position: relative; top: auto; }
+  .sections-scroll {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: calc(70px + var(--safe-bot));
+  }
+
   /* ── Sections ── */
   .section { display: none; padding: 20px 16px; }
   .section.active { display: block; }
@@ -255,6 +271,7 @@ document.head.appendChild(link);
 </style>
 </head>
 <body>
+<div class="content-wrap">
 
 <div class="app-header">
   <div class="header-top">
@@ -265,6 +282,7 @@ document.head.appendChild(link);
   </div>
 </div>
 
+<div class="sections-scroll">
 <!-- ═══ SECTIONS ═══ -->
 
 <!-- SNOW & WEATHER -->
@@ -488,6 +506,8 @@ document.head.appendChild(link);
     </a>
   </div>
 
+</div><!-- /sections-scroll -->
+
 <!-- ═══ BOTTOM NAV ═══ -->
 <nav class="bottom-nav">
   <button class="nav-btn active" id="nav-snow" onclick="showSection('snow')">
@@ -511,6 +531,7 @@ document.head.appendChild(link);
     <span class="nav-label">Traffic</span>
   </button>
 </nav>
+</div><!-- /content-wrap -->
 
 <script>
 // ═══════════════════════════════════════════
@@ -1008,9 +1029,17 @@ function selectCam(idx) {
 // ═══════════════════════════════════════════
 if ('serviceWorker' in navigator) {
   const swCode = `
-    const CACHE = 'ski-v3';
+    const CACHE = 'ski-v5';
     self.addEventListener('install', e => {
+      self.skipWaiting();
       e.waitUntil(caches.open(CACHE).then(c => c.addAll(['/'])));
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(
+        caches.keys().then(keys => Promise.all(
+          keys.filter(k => k !== CACHE).map(k => caches.delete(k))
+        )).then(() => self.clients.claim())
+      );
     });
     self.addEventListener('fetch', e => {
       if (e.request.url.includes('api.open-meteo.com') || e.request.url.includes('googleapis.com')) {
