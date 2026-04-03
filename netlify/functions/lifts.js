@@ -1,13 +1,13 @@
 // Netlify Function — Lift status proxy via Liftie
 
 const KEY_LIFTS = [
-  { key: 'La Chaux - Col des Gentianes (Jumbo)',          display: 'Jumbo (La Chaux → Gentianes)' },
+  { key: 'Tortin - Chassoure',                             display: 'Chassoure' },
   { key: 'Tortin - Col des Gentianes (Mont Fort 1)',       display: 'Tortin → Gentianes' },
-  { key: 'Col des Gentianes - Mont Fort (Mont Fort 2)',    display: 'Mont Fort' },
-  { key: 'Tortin - Chassoure',                             display: 'Chassoure (Tortin → Col)' },
-  { key: 'Lac des Vaux 2',                                 display: 'Lac des Vaux 2' },
   { key: 'Mont Gelé',                                      display: 'Mont Gelé' },
+  { key: 'Col des Gentianes - Mont Fort (Mont Fort 2)',    display: 'Mont Fort' },
+  { key: 'Lac des Vaux 2',                                 display: 'Lac des Vaux 2' },
   { key: 'Attelas',                                        display: 'Attelas' },
+  { key: 'La Chaux - Col des Gentianes (Jumbo)',           display: 'Jumbo' },
 ];
 
 export default async function handler(req) {
