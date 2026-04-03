@@ -21,7 +21,6 @@ export default async function handler(req) {
       }
     });
 
-    // Log status for debugging
     if (!res.ok) {
       const text = await res.text();
       return new Response(JSON.stringify({
@@ -36,6 +35,12 @@ export default async function handler(req) {
     const data = await res.json();
     const lifts = data.lifts || {};
 
+    // Return all lift names for debugging
+    const allLifts = Object.entries(lifts).map(([name, val]) => ({
+      name,
+      status: val?.status || 'unknown'
+    }));
+
     const result = KEY_LIFTS.map(name => ({
       name,
       status: lifts[name]?.status || 'unknown'
@@ -43,6 +48,7 @@ export default async function handler(req) {
 
     return new Response(JSON.stringify({
       lifts: result,
+      allLifts,
       updated: new Date().toISOString()
     }), {
       status: 200,
