@@ -509,6 +509,23 @@ document.head.appendChild(link);
 <div class="section" id="sec-trails">
 
   <div class="card">
+    <div class="card-title">Key lift status</div>
+    <table class="traffic-table" id="lifts-table">
+      <thead>
+        <tr>
+          <th style="text-align:left;">Lift</th>
+          <th style="text-align:center;">Status</th>
+        </tr>
+      </thead>
+      <tbody id="lifts-rows">
+        <tr><td colspan="2" class="loading-text"><span class="spinner"></span>Loading…</td></tr>
+      </tbody>
+    </table>
+    <div class="traffic-note" id="lifts-note"></div>
+    <button class="refresh-btn" onclick="loadLifts()">↻ Refresh lift status</button>
+  </div>
+
+  <div class="card">
     <div class="card-title">Live map &amp; status</div>
     <a class="avl-link" href="https://www.nendaz.ch/en/Z13328/live-map-of-the-ski-area" target="_blank" style="display:flex;margin-bottom:10px;">
       <div>
@@ -958,6 +975,43 @@ function buildScaleRef() {
 
 
 // ═══════════════════════════════════════════
+// LIFT STATUS — via Netlify Function (Liftie)
+// ═══════════════════════════════════════════
+
+function statusPill(status) {
+  const map = {
+    open:      { label: 'Open',        color: '#81c784', bg: 'rgba(129,199,132,0.15)' },
+    closed:    { label: 'Closed',      color: '#ef9a9a', bg: 'rgba(239,154,154,0.15)' },
+    hold:      { label: 'On hold',     color: '#ffb74d', bg: 'rgba(255,183,77,0.15)'  },
+    scheduled: { label: 'Scheduled',   color: '#4fc3f7', bg: 'rgba(79,195,247,0.15)'  },
+    unknown:   { label: 'Unknown',     color: '#7a9bb5', bg: 'rgba(122,155,181,0.15)' },
+  };
+  const s = map[status] || map.unknown;
+  return `<span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;color:${s.color};background:${s.bg};">${s.label}</span>`;
+}
+
+async function loadLifts() {
+  document.getElementById('lifts-rows').innerHTML = '<tr><td colspan="2" class="loading-text"><span class="spinner"></span>Loading…</td></tr>';
+  try {
+    const data = await fetch('/.netlify/functions/lifts').then(r => r.json());
+    if (data.error) throw new Error(data.error);
+
+    document.getElementById('lifts-rows').innerHTML = data.lifts.map(lift => `
+      <tr>
+        <td style="font-size:13px;color:var(--text);">${lift.name}</td>
+        <td style="text-align:center;">${statusPill(lift.status)}</td>
+      </tr>
+    `).join('');
+
+    const updated = new Date(data.updated).toLocaleTimeString('en-CH', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('lifts-note').textContent = `Updated ${updated} · via Liftie`;
+  } catch(e) {
+    document.getElementById('lifts-rows').innerHTML = '<tr><td colspan="2" style="text-align:center;color:var(--muted);padding:12px;">Could not load lift status</td></tr>';
+    document.getElementById('lifts-note').textContent = e.message;
+  }
+}
+
+// ═══════════════════════════════════════════
 // WEBCAM SELECTOR
 // ═══════════════════════════════════════════
 
@@ -1024,6 +1078,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
   loadWeather();
   loadTraffic();
+  loadLifts();
   buildScaleRef();
 
   // Restore saved danger level
