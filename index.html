@@ -338,6 +338,25 @@ document.head.appendChild(link);
 
 <!-- TRAFFIC -->
 <div class="section" id="sec-traffic">
+
+  <div class="card">
+    <div class="card-title" id="today-traffic-title">Today · Live travel times</div>
+    <table class="traffic-table">
+      <thead>
+        <tr>
+          <th>Depart</th>
+          <th>Arrive</th>
+          <th>Duration</th>
+          <th>Traffic</th>
+        </tr>
+      </thead>
+      <tbody id="today-rows">
+        <tr><td colspan="4" class="loading-text"><span class="spinner"></span>Loading…</td></tr>
+      </tbody>
+    </table>
+    <div class="traffic-note" id="today-note"></div>
+  </div>
+
   <div class="card">
     <div class="card-title">Commugny ↔ Nendaz · Predicted travel times</div>
     <div class="traffic-tabs">
@@ -391,7 +410,7 @@ document.head.appendChild(link);
     <div class="card-title">Route info</div>
     Commugny → A1 → Lausanne → A9 → Sion → Nendaz<br>
     <span style="color:var(--accent);">~130 km</span> · Base time approx. 1h 45min<br><br>
-    ⚠️ <strong style="color:var(--text);">Check road conditions:</strong> Chains or snow tyres may be required above Aproz. <a href="https://www.tcs.ch/fr/outils/etat-du-trafic.php" style="color:var(--accent);" target="_blank">TCS traffic →</a>
+    ⚠️ <strong style="color:var(--text);">Check road conditions:</strong> Chains or snow tyres may be required above Aproz. <a href="https://www.tcs.ch/verkehrsinfo" style="color:var(--accent);" target="_blank">TCS traffic →</a>
   </div>
 </div>
 
@@ -810,11 +829,14 @@ function renderTrafficTable(rows, tbodyId) {
   const tbody = document.getElementById(tbodyId);
   tbody.innerHTML = rows.map(row => {
     const cls = durationColor(row.mins);
+    const liveIndicator = row.live === false
+      ? `<span style="font-size:10px;color:var(--muted);" title="Estimated">~est</span>`
+      : `<span style="font-size:10px;color:#81c784;" title="Live Google data">●live</span>`;
     return `<tr>
       <td><strong>${row.dep}</strong></td>
       <td>${row.arr}</td>
       <td><span class="duration-pill ${cls}">${Math.floor(row.mins/60)}h ${row.mins%60}min</span></td>
-      <td style="font-size:12px;color:var(--muted);">${row.label}</td>
+      <td style="font-size:12px;color:var(--muted);">${row.label} ${liveIndicator}</td>
     </tr>`;
   }).join('');
 }
@@ -822,17 +844,56 @@ function renderTrafficTable(rows, tbodyId) {
 async function loadTraffic() {
   document.getElementById('fri-rows').innerHTML = '<tr><td colspan="4" class="loading-text"><span class="spinner"></span>Loading…</td></tr>';
   document.getElementById('sun-rows').innerHTML = '<tr><td colspan="4" class="loading-text"><span class="spinner"></span>Loading…</td></tr>';
+  document.getElementById('today-rows').innerHTML = '<tr><td colspan="4" class="loading-text"><span class="spinner"></span>Loading…</td></tr>';
+
+  // Determine direction from geolocation
+  const COMMUGNY_COORD = { lat: 46.3169, lon: 6.2132 };
+  const NENDAZ_COORD   = { lat: 46.1757, lon: 7.2942 };
+  function distKm(a, b) {
+    const R = 6371;
+    const dLat = (b.lat - a.lat) * Math.PI / 180;
+    const dLon = (b.lon - a.lon) * Math.PI / 180;
+    const x = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(a.lat * Math.PI/180) * Math.cos(b.lat * Math.PI/180) *
+              Math.sin(dLon/2) * Math.sin(dLon/2);
+    return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+  }
+
+  let fromParam = 'commugny'; // default
+  try {
+    const pos = await new Promise((resolve, reject) =>
+      navigator.geolocation.getCurrentPosition(resolve, reject, { timeout: 5000 })
+    );
+    const myLoc = { lat: pos.coords.latitude, lon: pos.coords.longitude };
+    const dCommugny = distKm(myLoc, COMMUGNY_COORD);
+    const dNendaz   = distKm(myLoc, NENDAZ_COORD);
+    fromParam = dNendaz < dCommugny ? 'nendaz' : 'commugny';
+  } catch(e) {
+    // Geolocation unavailable or denied — use default
+  }
 
   try {
-    const data = await cachedFetch('/.netlify/functions/traffic', 300000);
+    // Today's table should always be fresh — no cache
+    const data = await fetch(`/.netlify/functions/traffic?from=${fromParam}`).then(r => r.json());
     if (data.error) throw new Error(data.error);
 
+    // Today's table
+    if (data.todayRows?.length) {
+      renderTrafficTable(data.todayRows, 'today-rows');
+      document.getElementById('today-traffic-title').textContent = `Today · ${data.dirLabel}`;
+      document.getElementById('today-note').textContent = 'Live · updated ' + new Date().toLocaleTimeString('en-CH',{hour:'2-digit',minute:'2-digit'});
+    } else {
+      document.getElementById('today-rows').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:12px;">No live data available right now</td></tr>';
+    }
+
+    // Fri/Sun tables
     renderTrafficTable(data.friRows?.length ? data.friRows : FRI_ESTIMATES, 'fri-rows');
     renderTrafficTable(data.sunRows?.length ? data.sunRows : SUN_ESTIMATES, 'sun-rows');
     document.getElementById('traffic-note').textContent = 'Live data via Google Maps · ' + new Date().toLocaleTimeString('en-CH',{hour:'2-digit',minute:'2-digit'});
   } catch(e) {
     renderTrafficTable(FRI_ESTIMATES, 'fri-rows');
     renderTrafficTable(SUN_ESTIMATES, 'sun-rows');
+    document.getElementById('today-rows').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:12px;">Could not load live data</td></tr>';
     document.getElementById('traffic-note').textContent = 'API error — showing estimates. ' + e.message;
   }
 }
