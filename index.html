@@ -355,10 +355,13 @@ document.head.appendChild(link);
       </tbody>
     </table>
     <div class="traffic-note" id="today-note"></div>
+    <a id="gmaps-link" href="https://www.google.com/maps/dir/Commugny,Switzerland/Nendaz,Switzerland" target="_blank" class="refresh-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;margin-top:8px;">
+      🗺 Open route in Google Maps
+    </a>
   </div>
 
   <div class="card">
-    <div class="card-title">Commugny ↔ Nendaz · Predicted travel times</div>
+    <div class="card-title">Predicted travel times · Commugny ↔ Nendaz</div>
     <div class="traffic-tabs">
       <button class="traffic-tab active" id="tab-fri" onclick="showTrafficTab('fri')">
         Friday<br><span style="font-weight:400;font-size:10px;">Commugny → Nendaz</span>
@@ -881,6 +884,11 @@ async function loadTraffic() {
     if (data.todayRows?.length) {
       renderTrafficTable(data.todayRows, 'today-rows');
       document.getElementById('today-traffic-title').textContent = `Today · ${data.dirLabel}`;
+      // Update Google Maps link direction
+      const isFromNendaz = fromParam === 'nendaz';
+      const mapsOrigin = isFromNendaz ? 'Nendaz,Switzerland' : 'Commugny,Switzerland';
+      const mapsDest   = isFromNendaz ? 'Commugny,Switzerland' : 'Nendaz,Switzerland';
+      document.getElementById('gmaps-link').href = `https://www.google.com/maps/dir/${mapsOrigin}/${mapsDest}`;
       document.getElementById('today-note').textContent = 'Live · updated ' + new Date().toLocaleTimeString('en-CH',{hour:'2-digit',minute:'2-digit'});
     } else {
       document.getElementById('today-rows').innerHTML = '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:12px;">No live data available right now</td></tr>';
