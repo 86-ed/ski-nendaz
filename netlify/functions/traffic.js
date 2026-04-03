@@ -53,18 +53,12 @@ export default async function handler(req) {
       return rows;
     }
 
-    // Debug: test a single route to see raw Google response
-    const testDepSec = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
-    const testUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${COMMUGNY}&destinations=${NENDAZ}&departure_time=${testDepSec}&traffic_model=best_guess&key=${GMAPS_KEY}`;
-    const testRes = await fetch(testUrl);
-    const testData = await testRes.json();
-
     const [friRows, sunRows] = await Promise.all([
       buildRows(friHours, 5, COMMUGNY, NENDAZ),   // Friday: Commugny → Nendaz
       buildRows(sunHours, 0, NENDAZ, COMMUGNY)    // Sunday: Nendaz → Commugny
     ]);
 
-    return new Response(JSON.stringify({ friRows, sunRows, debug: testData }), {
+    return new Response(JSON.stringify({ friRows, sunRows }), {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
