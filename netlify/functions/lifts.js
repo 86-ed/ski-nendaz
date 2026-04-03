@@ -1,15 +1,4 @@
-// Netlify Function — Lift status proxy via Liftie
-
-const KEY_LIFTS = [
-  'Tortin - Chassoure',
-  'Tortin - Col des Gentianes (Mont Fort 1)',
-  'Lac des Vaux 2',
-  'Gentianes',
-  'Col des Gentianes - Mont Fort (Mont Fort 2)',
-  'Mont Gelé',
-  'Attelas',
-  'Prarion - Tracouet',
-];
+// Netlify Function — Lift status proxy via Liftie (debug version)
 
 export default async function handler(req) {
   try {
@@ -21,42 +10,15 @@ export default async function handler(req) {
       }
     });
 
-    if (!res.ok) {
-      const text = await res.text();
-      return new Response(JSON.stringify({
-        error: `Liftie returned ${res.status}`,
-        body: text.slice(0, 200)
-      }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
-    }
-
-    const data = await res.json();
-    const lifts = data.lifts || {};
-
-    // Return all lift names for debugging
-    const allLifts = Object.entries(lifts).map(([name, val]) => ({
-      name,
-      status: val?.status || 'unknown'
-    }));
-
-    const result = KEY_LIFTS.map(name => ({
-      name,
-      status: lifts[name]?.status || 'unknown'
-    }));
+    const text = await res.text();
 
     return new Response(JSON.stringify({
-      lifts: result,
-      allLifts,
-      updated: new Date().toISOString()
+      status: res.status,
+      headers: Object.fromEntries(res.headers.entries()),
+      body: text.slice(0, 2000)
     }), {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'public, max-age=60'
-      }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
 
   } catch (e) {
