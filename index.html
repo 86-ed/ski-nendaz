@@ -849,14 +849,11 @@ function renderTrafficTable(rows, tbodyId) {
   const tbody = document.getElementById(tbodyId);
   tbody.innerHTML = rows.map(row => {
     const cls = durationColor(row.mins);
-    const liveIndicator = row.live === false
-      ? `<span style="font-size:10px;color:var(--muted);" title="Estimated">~est</span>`
-      : `<span style="font-size:10px;color:#81c784;" title="Live Google data">●live</span>`;
     return `<tr>
       <td><strong>${row.dep}</strong></td>
       <td>${row.arr}</td>
       <td><span class="duration-pill ${cls}">${Math.floor(row.mins/60)}h ${row.mins%60}min</span></td>
-      <td style="font-size:12px;color:var(--muted);">${row.label} ${liveIndicator}</td>
+      <td style="font-size:12px;color:var(--muted);">${row.label}</td>
     </tr>`;
   }).join('');
 }
