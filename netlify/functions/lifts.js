@@ -1,15 +1,15 @@
 // Netlify Function — Lift status proxy via Liftie
 
-// Exact names as returned by Liftie for Verbier
+// Exact Liftie names mapped to friendly display names
 const KEY_LIFTS = [
-  'Tortin - Chassoure',
-  'Tortin - Col des Gentianes (Mont Fort 1)',
-  'Col des Gentianes - Mont Fort (Mont Fort 2)',
-  'Lac des Vaux 2',
-  'Gentianes',
-  'Mont Gelé',
-  'Attelas',
-  'La Chaux - Col des Gentianes (Jumbo)',
+  { key: 'La Chaux - Col des Gentianes (Jumbo)',          display: 'Jumbo (La Chaux → Gentianes)' },
+  { key: 'Tortin - Col des Gentianes (Mont Fort 1)',       display: 'Mont Fort 1 (Tortin → Gentianes)' },
+  { key: 'Col des Gentianes - Mont Fort (Mont Fort 2)',    display: 'Mont Fort 2 (Gentianes → Summit)' },
+  { key: 'Tortin - Chassoure',                             display: 'Chassoure (Tortin → Col)' },
+  { key: 'Gentianes',                                      display: 'Gentianes' },
+  { key: 'Lac des Vaux 2',                                 display: 'Lac des Vaux 2' },
+  { key: 'Mont Gelé',                                      display: 'Mont Gelé' },
+  { key: 'Attelas',                                        display: 'Attelas' },
 ];
 
 export default async function handler(req) {
@@ -30,12 +30,11 @@ export default async function handler(req) {
     }
 
     const data = await res.json();
-    // Correct path is data.lifts.status
     const lifts = data?.lifts?.status || {};
 
-    const result = KEY_LIFTS.map(name => ({
-      name,
-      status: lifts[name] || 'unknown'
+    const result = KEY_LIFTS.map(({ key, display }) => ({
+      name: display,
+      status: lifts[key] || 'unknown'
     }));
 
     return new Response(JSON.stringify({
