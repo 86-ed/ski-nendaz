@@ -1,4 +1,16 @@
-// Netlify Function — Lift status proxy via Liftie (debug version)
+// Netlify Function — Lift status proxy via Liftie
+
+// Exact names as returned by Liftie for Verbier
+const KEY_LIFTS = [
+  'Tortin - Chassoure',
+  'Tortin - Col des Gentianes (Mont Fort 1)',
+  'Col des Gentianes - Mont Fort (Mont Fort 2)',
+  'Lac des Vaux 2',
+  'Gentianes',
+  'Mont Gelé',
+  'Attelas',
+  'La Chaux - Col des Gentianes (Jumbo)',
+];
 
 export default async function handler(req) {
   try {
@@ -10,15 +22,32 @@ export default async function handler(req) {
       }
     });
 
-    const text = await res.text();
+    if (!res.ok) {
+      return new Response(JSON.stringify({ error: `Liftie returned ${res.status}` }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
+    const data = await res.json();
+    // Correct path is data.lifts.status
+    const lifts = data?.lifts?.status || {};
+
+    const result = KEY_LIFTS.map(name => ({
+      name,
+      status: lifts[name] || 'unknown'
+    }));
 
     return new Response(JSON.stringify({
-      status: res.status,
-      headers: Object.fromEntries(res.headers.entries()),
-      body: text.slice(0, 2000)
+      lifts: result,
+      updated: new Date().toISOString()
     }), {
       status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'public, max-age=60'
+      }
     });
 
   } catch (e) {
