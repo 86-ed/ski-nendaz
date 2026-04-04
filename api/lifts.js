@@ -1,4 +1,4 @@
-// Netlify Function — Lift status proxy via Liftie
+// Vercel Serverless Function — Lift status proxy via Liftie
 
 const KEY_LIFTS = [
   { key: 'Tortin - Chassoure',                             display: 'Chassoure' },
@@ -10,9 +10,12 @@ const KEY_LIFTS = [
   { key: 'La Chaux - Col des Gentianes (Jumbo)',           display: 'Jumbo' },
 ];
 
-module.exports = async function handler(req) {
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Content-Type', 'application/json');
+
   try {
-    const res = await fetch('https://liftie.info/api/resort/verbier', {
+    const r = await fetch('https://liftie.info/api/resort/verbier', {
       headers: {
         'Accept': 'application/json',
         'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
@@ -20,14 +23,11 @@ module.exports = async function handler(req) {
       }
     });
 
-    if (!res.ok) {
-      return new Response(JSON.stringify({ error: `Liftie returned ${res.status}` }), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-      });
+    if (!r.ok) {
+      return res.status(200).json({ error: `Liftie returned ${r.status}` });
     }
 
-    const data = await res.json();
+    const data = await r.json();
     const lifts = data?.lifts?.status || {};
 
     const result = KEY_LIFTS.map(({ key, display }) => ({
@@ -35,22 +35,10 @@ module.exports = async function handler(req) {
       status: lifts[key] || 'unknown'
     }));
 
-    return new Response(JSON.stringify({
-      lifts: result,
-      updated: new Date().toISOString()
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'public, max-age=60'
-      }
-    });
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    return res.json({ lifts: result, updated: new Date().toISOString() });
 
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    });
+    return res.status(500).json({ error: e.message });
   }
-}
+};

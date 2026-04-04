@@ -1,5 +1,4 @@
-// Netlify Function — Google Maps Distance Matrix proxy
-// Keeps the API key server-side, out of the browser and GitHub
+// Vercel Serverless Function — Google Maps Distance Matrix proxy
 
 const GMAPS_KEY = process.env.GMAPS_KEY;
 
@@ -37,23 +36,21 @@ function nextWeekdayAt(dayOfWeek, hour) {
 
 async function fetchRoute(origin, dest, departureSec) {
   const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin}&destinations=${dest}&departure_time=${departureSec}&traffic_model=best_guess&key=${GMAPS_KEY}`;
-  const res = await fetch(url);
-  const data = await res.json();
+  const r = await fetch(url);
+  const data = await r.json();
   return data?.rows?.[0]?.elements?.[0];
 }
 
-module.exports = async function handler(req) {
+module.exports = async (req, res) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Content-Type', 'application/json');
+
   if (!GMAPS_KEY) {
-    return new Response(JSON.stringify({ error: 'No API key configured' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(500).json({ error: 'No API key configured' });
   }
 
   try {
-    // Parse optional from= query param: 'nendaz' or 'commugny'
-    const url = new URL(req.url);
-    const from = url.searchParams.get('from') || 'commugny';
+    const from = req.query.from || 'commugny';
     const fromNendaz = from === 'nendaz';
     const todayOrigin = fromNendaz ? NENDAZ : COMMUGNY;
     const todayDest   = fromNendaz ? COMMUGNY : NENDAZ;
@@ -83,16 +80,10 @@ module.exports = async function handler(req) {
       return rows;
     }
 
-    // Current day: now + next 5 hours on the hour
+    // Today's table
     const now = new Date();
-    const nowSec = Math.floor(now.getTime() / 1000);
-
-    // Build departure times: now (rounded up to next 5 min), then next 5 hours on the hour
-    const depTimes = [];
-    // First slot: next 5-minute boundary from now
     const nowRounded = new Date(Math.ceil(now.getTime() / (5 * 60000)) * (5 * 60000));
-    depTimes.push(Math.floor(nowRounded.getTime() / 1000));
-    // Next 5 hours on the hour
+    const depTimes = [Math.floor(nowRounded.getTime() / 1000)];
     const nextHour = new Date(now);
     nextHour.setMinutes(0, 0, 0);
     nextHour.setHours(nextHour.getHours() + 1);
@@ -121,19 +112,9 @@ module.exports = async function handler(req) {
       buildRows(sunHours, 0, NENDAZ, COMMUGNY, SUN_ESTIMATES)
     ]);
 
-    return new Response(JSON.stringify({ friRows, sunRows, todayRows, dirLabel }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-        'Cache-Control': 'no-cache' // don't cache today's live times
-      }
-    });
+    return res.json({ friRows, sunRows, todayRows, dirLabel });
 
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' }
-    });
+    return res.status(500).json({ error: e.message });
   }
-}
+};
