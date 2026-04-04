@@ -42,7 +42,7 @@ async function fetchRoute(origin, dest, departureSec) {
   return data?.rows?.[0]?.elements?.[0];
 }
 
-export default async function handler(req) {
+module.exports = async function handler(req) {
   if (!GMAPS_KEY) {
     return new Response(JSON.stringify({ error: 'No API key configured' }), {
       status: 500,

@@ -10,7 +10,7 @@ const KEY_LIFTS = [
   { key: 'La Chaux - Col des Gentianes (Jumbo)',           display: 'Jumbo' },
 ];
 
-export default async function handler(req) {
+module.exports = async function handler(req) {
   try {
     const res = await fetch('https://liftie.info/api/resort/verbier', {
       headers: {
