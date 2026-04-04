@@ -891,7 +891,7 @@ async function loadTraffic() {
 
   try {
     // Today's table should always be fresh — no cache
-    const data = await fetch(`/.netlify/functions/traffic?from=${fromParam}`).then(r => r.json());
+    const data = await fetch(`/api/traffic?from=${fromParam}`).then(r => r.json());
     if (data.error) throw new Error(data.error);
 
     // Today's table
@@ -990,7 +990,7 @@ function statusPill(status) {
 async function loadLifts() {
   document.getElementById('lifts-rows').innerHTML = '<tr><td colspan="2" class="loading-text"><span class="spinner"></span>Loading…</td></tr>';
   try {
-    const data = await fetch('/.netlify/functions/lifts').then(r => r.json());
+    const data = await fetch('/api/lifts').then(r => r.json());
     if (data.error) throw new Error(data.error);
 
     document.getElementById('lifts-rows').innerHTML = data.lifts.map(lift => `
