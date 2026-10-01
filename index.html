@@ -984,8 +984,18 @@ function buildScaleRef() {
 
 
 // ═══════════════════════════════════════════
-// LIFT STATUS — via Netlify Function (Liftie)
+// LIFT STATUS — direct browser fetch from Liftie
 // ═══════════════════════════════════════════
+
+const KEY_LIFTS = [
+  { key: 'Tortin - Chassoure',                             display: 'Chassoure' },
+  { key: 'Tortin - Col des Gentianes (Mont Fort 1)',       display: 'Tortin → Gentianes' },
+  { key: 'Mont Gelé',                                      display: 'Mont Gelé' },
+  { key: 'Col des Gentianes - Mont Fort (Mont Fort 2)',    display: 'Mont Fort' },
+  { key: 'Lac des Vaux 2',                                 display: 'Lac des Vaux 2' },
+  { key: 'Attelas',                                        display: 'Attelas' },
+  { key: 'La Chaux - Col des Gentianes (Jumbo)',           display: 'Jumbo' },
+];
 
 function statusPill(status) {
   const map = {
@@ -1002,17 +1012,21 @@ function statusPill(status) {
 async function loadLifts() {
   document.getElementById('lifts-rows').innerHTML = '<tr><td colspan="2" class="loading-text"><span class="spinner"></span>Loading…</td></tr>';
   try {
-    const data = await fetch('/api/lifts').then(r => r.json());
-    if (data.error) throw new Error(data.error);
+    const data = await fetch('https://liftie.info/api/resort/verbier').then(r => r.json());
+    const lifts = data?.lifts?.status || {};
+    const result = KEY_LIFTS.map(({ key, display }) => ({
+      name: display,
+      status: lifts[key] || 'unknown'
+    }));
 
-    document.getElementById('lifts-rows').innerHTML = data.lifts.map(lift => `
+    document.getElementById('lifts-rows').innerHTML = result.map(lift => `
       <tr>
         <td style="font-size:13px;color:var(--text);">${lift.name}</td>
         <td style="text-align:center;">${statusPill(lift.status)}</td>
       </tr>
     `).join('');
 
-    const updated = new Date(data.updated).toLocaleTimeString('en-CH', { hour: '2-digit', minute: '2-digit' });
+    const updated = new Date().toLocaleTimeString('en-CH', { hour: '2-digit', minute: '2-digit' });
     document.getElementById('lifts-note').textContent = `Updated ${updated} · via Liftie`;
   } catch(e) {
     document.getElementById('lifts-rows').innerHTML = '<tr><td colspan="2" style="text-align:center;color:var(--muted);padding:12px;">Could not load lift status</td></tr>';
